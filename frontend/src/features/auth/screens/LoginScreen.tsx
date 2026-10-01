@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import {
+  Image,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,175 +20,223 @@ export default function LoginScreen() {
   const isStudent = role === 'student';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* Temporary banner until Figma assets are exported */}
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>SLIITStack</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.logoText}>SLIITStack</Text>
-
-          {/* Student / Staff selector */}
-          <View style={styles.roleSelector}>
-            <Pressable
-              style={[
-                styles.roleButton,
-                isStudent && styles.activeRoleButton,
-              ]}
-              onPress={() => setRole('student')}>
-              <Text
-                style={[
-                  styles.roleText,
-                  isStudent && styles.activeRoleText,
-                ]}>
-                Student
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.roleButton,
-                !isStudent && styles.activeRoleButton,
-              ]}
-              onPress={() => setRole('staff')}>
-              <Text
-                style={[
-                  styles.roleText,
-                  !isStudent && styles.activeRoleText,
-                ]}>
-                Staff
-              </Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Login to continue</Text>
-
-          <Text style={styles.label}>
-            {isStudent ? 'E-mail' : 'Staff ID'}
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            value={identifier}
-            onChangeText={setIdentifier}
-            placeholder={isStudent ? 'Enter your e-mail' : 'Enter Staff ID'}
-            autoCapitalize="none"
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
+        <View style={styles.container}>
+          {/* Top Figma banner */}
+          <Image
+            source={require('@/assets/images/auth/login-top-banner.png')}
+            style={styles.topBanner}
+            resizeMode="cover"
           />
 
-          <Text style={styles.label}>Password</Text>
+          <View style={styles.card}>
+            {/* Logo */}
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('@/assets/images/auth/sliitstack-logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
 
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Enter password"
-            secureTextEntry
-          />
+              <Text style={styles.logoName}>SLIITStack</Text>
+            </View>
 
-          <Pressable>
-            <Text style={styles.forgotPassword}>Forgot Password?</Text>
-          </Pressable>
+            {/* Student / Staff selector */}
+            <View style={styles.roleSelector}>
+              <Pressable
+                style={[
+                  styles.roleButton,
+                  isStudent && styles.activeRoleButton,
+                ]}
+                onPress={() => {
+                  setRole('student');
+                  setIdentifier('');
+                  setPassword('');
+                }}>
+                <Text
+                  style={[
+                    styles.roleText,
+                    isStudent && styles.activeRoleText,
+                  ]}>
+                  Student
+                </Text>
+              </Pressable>
 
-          <Pressable style={styles.loginButton}>
-            <Text style={styles.loginButtonText}>Login</Text>
-          </Pressable>
+              <Pressable
+                style={[
+                  styles.roleButton,
+                  !isStudent && styles.activeRoleButton,
+                ]}
+                onPress={() => {
+                  setRole('staff');
+                  setIdentifier('');
+                  setPassword('');
+                }}>
+                <Text
+                  style={[
+                    styles.roleText,
+                    !isStudent && styles.activeRoleText,
+                  ]}>
+                  Staff
+                </Text>
+              </Pressable>
+            </View>
 
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-            <Text style={styles.orText}>Or</Text>
-            <View style={styles.divider} />
-          </View>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Login to continue</Text>
 
-          <Pressable style={styles.googleButton}>
-            <Text style={styles.googleText}>G</Text>
-            <Text style={styles.googleButtonText}>
-              Continue with Google
+            <Text style={styles.label}>
+              {isStudent ? 'E-mail' : 'Staff ID'}
             </Text>
-          </Pressable>
 
-          <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>
-              Don&apos;t have an account?{' '}
-            </Text>
+            <TextInput
+              style={styles.input}
+              value={identifier}
+              onChangeText={setIdentifier}
+              placeholder={
+                isStudent ? 'Enter your e-mail' : 'Enter Staff ID'
+              }
+              placeholderTextColor="#9A9A9A"
+              autoCapitalize="none"
+              keyboardType={isStudent ? 'email-address' : 'default'}
+            />
+
+            <Text style={styles.label}>Password</Text>
+
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter password"
+              placeholderTextColor="#9A9A9A"
+              secureTextEntry
+            />
 
             <Pressable>
-              <Text style={styles.signupLink}>Sign Up</Text>
+              <Text style={styles.forgotPassword}>
+                Forgot Password?
+              </Text>
             </Pressable>
-          </View>
-        </View>
 
-        {/* Temporary bottom image area */}
-        <View style={styles.bottomBanner}>
-          <Text style={styles.bottomBannerText}>Study • Reserve • Learn</Text>
+            <Pressable style={styles.loginButton}>
+              <Text style={styles.loginButtonText}>Login</Text>
+            </Pressable>
+
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+
+              <Text style={styles.orText}>Or</Text>
+
+              <View style={styles.divider} />
+            </View>
+
+            <Pressable style={styles.googleButton}>
+              <Text style={styles.googleLogo}>G</Text>
+
+              <Text style={styles.googleButtonText}>
+                Continue with Google
+              </Text>
+            </Pressable>
+
+            <View style={styles.signupContainer}>
+              <Text style={styles.signupText}>
+                Don&apos;t have an account?{' '}
+              </Text>
+
+              <Pressable>
+                <Text style={styles.signupLink}>Sign Up</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Bottom Figma banner */}
+          <Image
+            source={require('@/assets/images/auth/login-bottom-banner.png')}
+            style={styles.bottomBanner}
+            resizeMode="cover"
+          />
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#DDF3F8',
+    backgroundColor: '#DFF4F8',
   },
 
-  content: {
-    flex: 1,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-  },
-
-  banner: {
-    height: 90,
-    borderRadius: 10,
-    backgroundColor: '#B7D8E3',
-    justifyContent: 'center',
+  scrollContent: {
+    flexGrow: 1,
     alignItems: 'center',
-    marginBottom: 14,
+    paddingVertical: 14,
   },
 
-  bannerText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#2C4C8A',
+  container: {
+    width: '100%',
+    maxWidth: 390,
+    paddingHorizontal: 14,
+  },
+
+  topBanner: {
+    width: '100%',
+    height: 95,
+    borderRadius: 10,
+    marginBottom: 14,
   },
 
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 18,
+    borderRadius: 9,
+    paddingHorizontal: 18,
+    paddingVertical: 18,
   },
 
-  logoText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2C4C8A',
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 14,
+  },
+
+  logo: {
+    width: 38,
+    height: 38,
+    marginRight: 8,
+  },
+
+  logoName: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontStyle: 'italic',
+    color: '#152D5A',
   },
 
   roleSelector: {
     flexDirection: 'row',
     backgroundColor: '#EDF1F5',
-    borderRadius: 8,
     padding: 4,
+    borderRadius: 8,
     marginBottom: 18,
   },
 
   roleButton: {
     flex: 1,
     paddingVertical: 9,
-    alignItems: 'center',
     borderRadius: 6,
+    alignItems: 'center',
   },
 
   activeRoleButton: {
-    backgroundColor: '#2F5597',
+    backgroundColor: '#30518E',
   },
 
   roleText: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#555555',
   },
@@ -196,45 +246,50 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 26,
+    fontSize: 25,
     fontWeight: '700',
     color: '#111111',
   },
 
   subtitle: {
-    color: '#777777',
-    marginTop: 3,
-    marginBottom: 22,
+    fontSize: 14,
+    color: '#717171',
+    marginTop: 2,
+    marginBottom: 21,
   },
 
   label: {
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111111',
     marginBottom: 7,
-    color: '#222222',
   },
 
   input: {
+    height: 44,
     borderWidth: 1,
-    borderColor: '#777777',
-    borderRadius: 4,
-    height: 46,
-    paddingHorizontal: 12,
-    marginBottom: 16,
+    borderColor: '#606060',
+    borderRadius: 2,
+    paddingHorizontal: 11,
     backgroundColor: '#FFFFFF',
+    marginBottom: 15,
+    fontSize: 14,
   },
 
   forgotPassword: {
-    alignSelf: 'flex-end',
+    textAlign: 'right',
     color: '#555555',
-    marginBottom: 18,
+    fontSize: 13,
+    marginTop: -4,
+    marginBottom: 17,
   },
 
   loginButton: {
-    backgroundColor: '#2F5597',
-    height: 48,
+    height: 46,
+    backgroundColor: '#30518E',
     borderRadius: 8,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
 
   loginButtonText: {
@@ -252,61 +307,59 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#999999',
+    backgroundColor: '#7B7B7B',
   },
 
   orText: {
-    marginHorizontal: 12,
+    paddingHorizontal: 10,
     color: '#555555',
+    fontSize: 13,
   },
 
   googleButton: {
-    height: 48,
-    backgroundColor: '#F1F1F1',
-    borderRadius: 5,
+    height: 44,
+    borderRadius: 3,
+    backgroundColor: '#F0F0F0',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
   },
 
-  googleText: {
-    fontSize: 19,
+  googleLogo: {
+    fontSize: 20,
     fontWeight: '800',
     color: '#4285F4',
+    marginRight: 11,
   },
 
   googleButtonText: {
-    fontWeight: '600',
     color: '#222222',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 22,
+    marginBottom: 3,
   },
 
   signupText: {
+    fontSize: 13,
     color: '#555555',
   },
 
   signupLink: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#111111',
   },
 
   bottomBanner: {
-    height: 65,
-    marginTop: 14,
+    width: '100%',
+    height: 75,
     borderRadius: 8,
-    backgroundColor: '#C8D6DB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  bottomBannerText: {
-    fontWeight: '600',
-    color: '#43535A',
+    marginTop: 14,
   },
 });
