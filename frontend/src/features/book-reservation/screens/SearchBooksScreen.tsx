@@ -1,66 +1,87 @@
+
 import { useState } from 'react';
 import {
+  Keyboard,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  Pressable,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import BookSearchBar from '../components/BookSearchBar';
 import GenreSelector from '../components/GenreSelector';
 import RecentSearches from '../components/RecentSearches';
+import AppHeader from '@/components/AppHeader';
 
 export default function SearchBooksScreen() {
+  const router = useRouter();
+
   const [search, setSearch] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  const [recentSearches, setRecentSearches] = useState<string[]>([
-    'Clean code',
-    'Data structures',
-  ]);
+  // Enable search if text is entered OR any genre is selected,
+  // including "All".
+  const canSearch =
+    search.trim().length > 0 || selectedGenre !== null;
 
   const handleSearch = () => {
     const trimmedSearch = search.trim();
 
-    if (!trimmedSearch) {
+    // Stop only when the search field is empty and no genre is selected.
+    if (!trimmedSearch && selectedGenre === null) {
       return;
     }
 
-    setRecentSearches((previousSearches) => {
-      // Remove the search if it already exists
-      const filteredSearches = previousSearches.filter(
-        (item) => item.toLowerCase() !== trimmedSearch.toLowerCase()
-      );
+    Keyboard.dismiss();
 
-      // Add the newest search to the beginning
-      return [trimmedSearch, ...filteredSearches].slice(0, 5);
+    if (trimmedSearch) {
+      setRecentSearches((previousSearches) => {
+        const filteredSearches = previousSearches.filter(
+          (item) =>
+            item.toLowerCase() !== trimmedSearch.toLowerCase()
+        );
+
+        return [trimmedSearch, ...filteredSearches].slice(0, 5);
+      });
+    }
+
+    // "All" means search across every genre.
+    const genre =
+      selectedGenre === null || selectedGenre === 'All'
+        ? ''
+        : selectedGenre;
+
+    router.push({
+      pathname: '/results',
+      params: {
+        search: trimmedSearch,
+        genre,
+      },
     });
-
-    console.log({
-      search: trimmedSearch,
-      genre: selectedGenre,
-    });
-
-    // Supabase search will be connected later.
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <AppHeader />
+
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>Search books</Text>
 
         <BookSearchBar
           value={search}
           onChangeText={setSearch}
+          onSubmit={handleSearch}
         />
 
-        <Text style={styles.sectionTitle}>
-          Genre
-        </Text>
+        <Text style={styles.sectionTitle}>Genre</Text>
 
         <GenreSelector
           selectedGenre={selectedGenre}
@@ -69,14 +90,19 @@ export default function SearchBooksScreen() {
 
         <Pressable
           onPress={handleSearch}
-          style={styles.searchButton}
+          disabled={!canSearch}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canSearch }}
+          style={({ pressed }) => [
+            styles.searchButton,
+            !canSearch && styles.searchButtonDisabled,
+            pressed && canSearch && styles.searchButtonPressed,
+          ]}
         >
-          <Text style={styles.searchButtonText}>
-            Search
-          </Text>
+          <Text style={styles.searchButtonText}>Search</Text>
         </Pressable>
 
-        <Text style={styles.sectionTitle}>
+        <Text style={[styles.sectionTitle, styles.recentTitle]}>
           Recent searches
         </Text>
 
@@ -97,37 +123,50 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingBottom: 40,
   },
 
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '700',
     color: '#111827',
-    marginBottom: 12,
+    marginBottom: 16,
   },
 
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#111827',
     marginTop: 24,
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+
+  recentTitle: {
+    marginTop: 32,
+    marginBottom: 4,
   },
 
   searchButton: {
-    height: 42,
-    marginTop: 20,
-    borderRadius: 7,
+    height: 48,
+    marginTop: 24,
+    borderRadius: 10,
     backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
+  searchButtonDisabled: {
+    opacity: 0.5,
+  },
+
+  searchButtonPressed: {
+    opacity: 0.85,
+  },
+
   searchButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
 });
