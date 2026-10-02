@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import AppHeader from '@/components/AppHeader';
 import { searchBooks } from '../services/bookService';
@@ -26,6 +26,7 @@ export default function BookResultsScreen() {
   const params = useLocalSearchParams<{ search?: string; genre?: string }>();
   const search = params.search ?? '';
   const genre = params.genre ?? '';
+  const router = useRouter();
 
   const [results, setResults] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +65,12 @@ export default function BookResultsScreen() {
           results.map((book) => (
             <Pressable
               key={book.id}
-              onPress={() => console.log('Selected book:', book.id)}
+              onPress={() =>
+                    router.push({
+                        pathname: '/reserve',
+                        params: { id: book.id },
+                    })
+                    }
               accessibilityRole="button"
               accessibilityLabel={`${book.title}, ${book.author}, ${book.status}`}
               style={({ pressed }) => [

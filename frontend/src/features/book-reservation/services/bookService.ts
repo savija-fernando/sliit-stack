@@ -5,12 +5,12 @@ const mockBooks: Book[] = [
   {
     id: '1',
     title: 'Design patterns',
-    author: 'Gamma et al.',
+    author: 'Gamma, Helm, Johnson, Vlissides',
     genre: 'Academic',
     status: 'Available',
-    location: 'Library - Shelf A2',
-    totalCopies: 5,
-    availableCopies: 3,
+    location: 'Shelf B4, 2nd floor',
+    totalCopies: 3,
+    availableCopies: 2,
   },
   {
     id: '2',
@@ -63,6 +63,11 @@ export async function searchBooks({
 
     return matchesSearch && matchesGenre;
   });
+}
+
+export async function getBookById(id: string): Promise<Book | null> {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  return mockBooks.find((book) => book.id === id) ?? null;
 }
 
 // Later, something like:
