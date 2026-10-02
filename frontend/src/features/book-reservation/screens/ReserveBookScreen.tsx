@@ -45,12 +45,17 @@ export default function ReserveBookScreen() {
   const canReserve =
     !!book && book.status === 'Available' && book.availableCopies > 0;
 
-  const handleReserve = () => {
-    if (!book || !canReserve) return;
+const handleReserve = () => {
+  if (!book || !canReserve) return;
 
-    console.log('Reserve book:', book.id);
-    // Connect the Supabase reservation later.
-  };
+  // Connect the Supabase reservation later.
+  const reference = `BR-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  router.replace({
+    pathname: '/confirmation',
+    params: { reference },
+  });
+};
 
   return (
     <SafeAreaView style={styles.container}>
