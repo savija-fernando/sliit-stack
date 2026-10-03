@@ -21,6 +21,8 @@ const mockBooks: Book[] = [
     location: 'Library - Shelf A3',
     totalCopies: 4,
     availableCopies: 0,
+    dueDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+    waitingCount: 1,
   },
   {
     id: '3',

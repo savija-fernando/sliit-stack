@@ -17,6 +17,26 @@ import StatusBadge from '../components/StatusBadge';
 import { getBookById } from '../services/bookService';
 import type { Book } from '../types/book';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function formatDueIn(dueDate?: string) {
+  if (!dueDate) return 'Due date not available';
+
+  const days = Math.ceil((new Date(dueDate).getTime() - Date.now()) / DAY_MS);
+
+  if (days <= 0) return 'Due back today';
+  if (days === 1) return 'Due back in 1 day';
+  return `Due back in ${days} days`;
+}
+
+function formatWaiting(count = 0) {
+  if (count === 0) return 'No one is waiting';
+  if (count === 1) return '1 person already waiting';
+  return `${count} people already waiting`;
+}
+
+// Shows "Reserve book" for available books and
+// "Join waiting list" for issued books.
 export default function ReserveBookScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -42,20 +62,31 @@ export default function ReserveBookScreen() {
     };
   }, [id]);
 
+  const isIssued = book?.status === 'Issued';
+
   const canReserve =
     !!book && book.status === 'Available' && book.availableCopies > 0;
 
-const handleReserve = () => {
-  if (!book || !canReserve) return;
+  const canPress = isIssued || canReserve;
 
-  // Connect the Supabase reservation later.
-  const reference = `BR-${Math.floor(1000 + Math.random() * 9000)}`;
+  const handleReserve = () => {
+    if (!book || !canReserve) return;
 
-  router.replace({
-    pathname: '/confirmation',
-    params: { reference },
-  });
-};
+    // Connect the Supabase reservation later.
+    const reference = `BR-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    router.replace({
+      pathname: '/books/confirmation',
+      params: { reference },
+    });
+  };
+
+  const handleJoinWaitingList = () => {
+    if (!book || !isIssued) return;
+
+    console.log('Join waiting list:', book.id);
+    // Connect the Supabase waiting list later.
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -102,47 +133,75 @@ const handleReserve = () => {
             <View style={styles.details}>
               <Text style={styles.title}>{book.title}</Text>
               <Text style={styles.author}>{book.author}</Text>
-              <Text style={styles.copies}>
-                {book.availableCopies}{' '}
-                {book.availableCopies === 1 ? 'copy' : 'copies'} available
-              </Text>
+
+              {!isIssued && (
+                <Text style={styles.copies}>
+                  {book.availableCopies}{' '}
+                  {book.availableCopies === 1 ? 'copy' : 'copies'} available
+                </Text>
+              )}
+
               <View style={styles.badgeWrapper}>
                 <StatusBadge status={book.status} />
               </View>
             </View>
 
             {/* Info rows */}
-            <View style={styles.infoList}>
-              {book.location ? (
-                <View style={styles.infoRow}>
-                  <Ionicons name="location-outline" size={18} color="#111827" />
-                  <Text style={styles.infoText}>{book.location}</Text>
+            {isIssued ? (
+              <View style={styles.infoListCentered}>
+                <View style={styles.infoRowCentered}>
+                  <Ionicons name="calendar-outline" size={16} color="#111827" />
+                  <Text style={styles.infoTextSmall}>
+                    {formatDueIn(book.dueDate)}
+                  </Text>
                 </View>
-              ) : null}
 
-              <View style={styles.infoRow}>
-                <Ionicons name="time-outline" size={18} color="#111827" />
-                <Text style={styles.infoText}>
-                  Collect within 1 day of reserving
-                </Text>
+                <View style={styles.infoRowCentered}>
+                  <Ionicons name="people-outline" size={16} color="#111827" />
+                  <Text style={styles.infoTextSmall}>
+                    {formatWaiting(book.waitingCount)}
+                  </Text>
+                </View>
               </View>
-            </View>
+            ) : (
+              <View style={styles.infoList}>
+                {book.location ? (
+                  <View style={styles.infoRow}>
+                    <Ionicons
+                      name="location-outline"
+                      size={18}
+                      color="#111827"
+                    />
+                    <Text style={styles.infoText}>{book.location}</Text>
+                  </View>
+                ) : null}
+
+                <View style={styles.infoRow}>
+                  <Ionicons name="time-outline" size={18} color="#111827" />
+                  <Text style={styles.infoText}>
+                    Collect within 1 day of reserving
+                  </Text>
+                </View>
+              </View>
+            )}
           </ScrollView>
 
           {/* Pinned button */}
           <View style={styles.footer}>
             <Pressable
-              onPress={handleReserve}
-              disabled={!canReserve}
+              onPress={isIssued ? handleJoinWaitingList : handleReserve}
+              disabled={!canPress}
               accessibilityRole="button"
-              accessibilityState={{ disabled: !canReserve }}
+              accessibilityState={{ disabled: !canPress }}
               style={({ pressed }) => [
-                styles.reserveButton,
-                !canReserve && styles.reserveButtonDisabled,
-                pressed && canReserve && styles.reserveButtonPressed,
+                styles.actionButton,
+                !canPress && styles.actionButtonDisabled,
+                pressed && canPress && styles.actionButtonPressed,
               ]}
             >
-              <Text style={styles.reserveButtonText}>Reserve book</Text>
+              <Text style={styles.actionButtonText}>
+                {isIssued ? 'Join waiting list' : 'Reserve book'}
+              </Text>
             </Pressable>
           </View>
         </>
@@ -247,6 +306,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 
+  // Available layout (left aligned)
   infoList: {
     marginTop: 32,
     gap: 12,
@@ -263,6 +323,25 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
 
+  // Issued layout (centered)
+  infoListCentered: {
+    marginTop: 24,
+    gap: 8,
+    alignItems: 'center',
+  },
+
+  infoRowCentered: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+
+  infoTextSmall: {
+    fontSize: 13,
+    color: '#111827',
+  },
+
   footer: {
     paddingHorizontal: 20,
     paddingTop: 8,
@@ -270,7 +349,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
-  reserveButton: {
+  actionButton: {
     height: 48,
     borderRadius: 10,
     backgroundColor: '#2563EB',
@@ -278,15 +357,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  reserveButtonDisabled: {
+  actionButtonDisabled: {
     opacity: 0.5,
   },
 
-  reserveButtonPressed: {
+  actionButtonPressed: {
     opacity: 0.85,
   },
 
-  reserveButtonText: {
+  actionButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '600',

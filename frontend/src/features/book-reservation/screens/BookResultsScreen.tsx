@@ -67,7 +67,7 @@ export default function BookResultsScreen() {
               key={book.id}
               onPress={() =>
                     router.push({
-                        pathname: '/reserve',
+                        pathname: '/books/reserve',
                         params: { id: book.id },
                     })
                     }

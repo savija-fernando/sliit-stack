@@ -11,6 +11,8 @@ export type Book = {
   location?: string;
   totalCopies: number;
   availableCopies: number;
+  dueDate?: string; // ISO date, when an issued copy is due back
+  waitingCount?: number; // people already on the waiting list
 };
 
 export type BookSearchParams = {

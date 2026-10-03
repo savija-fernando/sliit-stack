@@ -1,5 +1,5 @@
-import SearchBooksScreen from '@/features/book-reservation/screens/SearchBooksScreen';
+import ScreenPlaceholder from '@/components/ScreenPlaceholder';
 
 export default function HomeScreen() {
-  return <SearchBooksScreen />;
+  return <ScreenPlaceholder title="Home" />;
 }

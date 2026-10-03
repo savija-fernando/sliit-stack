@@ -55,7 +55,7 @@ export default function SearchBooksScreen() {
         : selectedGenre;
 
     router.push({
-      pathname: '/results',
+      pathname: '/books/results',
       params: {
         search: trimmedSearch,
         genre,

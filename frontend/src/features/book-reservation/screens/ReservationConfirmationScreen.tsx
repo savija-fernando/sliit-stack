@@ -15,7 +15,7 @@ export default function ReservationConfirmationScreen() {
   const { reference } = useLocalSearchParams<{ reference?: string }>();
 
  const handleDone = () => {
-  router.dismissTo('/');
+  router.dismissTo('/books');
 };
 
   return (
