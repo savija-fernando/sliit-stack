@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -10,11 +10,16 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import AppHeader from '@/components/AppHeader';
+import BackRow from '../components/BackRow';
 import StatusBadge from '../components/StatusBadge';
-import { getBookById } from '../services/bookService';
+import {
+  getBookById,
+  isOnWaitingList,
+  joinWaitingList,
+} from '../services/bookService';
 import type { Book } from '../types/book';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -43,6 +48,14 @@ export default function ReserveBookScreen() {
 
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
+  const [joined, setJoined] = useState(false);
+
+  // Re-check when coming back from the waiting list screen
+  useFocusEffect(
+    useCallback(() => {
+      isOnWaitingList(id).then(setJoined);
+    }, [id])
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -81,28 +94,26 @@ export default function ReserveBookScreen() {
     });
   };
 
-  const handleJoinWaitingList = () => {
+  const handleWaitingList = async () => {
     if (!book || !isIssued) return;
 
-    console.log('Join waiting list:', book.id);
-    // Connect the Supabase waiting list later.
+    if (!joined) {
+      // Connect the Supabase waiting list later.
+      await joinWaitingList(book.id);
+      setJoined(true);
+    }
+
+    router.push({
+      pathname: '/books/waiting-list',
+      params: { id: book.id },
+    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <AppHeader />
 
-      <Pressable
-        onPress={() => router.back()}
-        accessibilityRole="button"
-        accessibilityLabel="Back to results"
-        style={styles.backRow}
-      >
-        <View style={styles.backCircle}>
-          <Ionicons name="arrow-back" size={18} color="#FFFFFF" />
-        </View>
-        <Text style={styles.backText}>Back to results</Text>
-      </Pressable>
+      <BackRow label="Back to results" onPress={() => router.back()} />
 
       {loading ? (
         <ActivityIndicator style={styles.loader} color="#2563EB" />
@@ -189,7 +200,7 @@ export default function ReserveBookScreen() {
           {/* Pinned button */}
           <View style={styles.footer}>
             <Pressable
-              onPress={isIssued ? handleJoinWaitingList : handleReserve}
+              onPress={isIssued ? handleWaitingList : handleReserve}
               disabled={!canPress}
               accessibilityRole="button"
               accessibilityState={{ disabled: !canPress }}
@@ -200,7 +211,11 @@ export default function ReserveBookScreen() {
               ]}
             >
               <Text style={styles.actionButtonText}>
-                {isIssued ? 'Join waiting list' : 'Reserve book'}
+                {isIssued
+                  ? joined
+                    ? 'View waiting list'
+                    : 'Join waiting list'
+                  : 'Reserve book'}
               </Text>
             </Pressable>
           </View>
@@ -214,29 +229,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },
-
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-
-  backCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#0B2B6B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  backText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
   },
 
   loader: {

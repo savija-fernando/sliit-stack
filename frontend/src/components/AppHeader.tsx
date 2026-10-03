@@ -4,11 +4,17 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 type AppHeaderProps = {
   onMenuPress?: () => void;
   onProfilePress?: () => void;
+  rightAction?: 'profile' | 'notifications';
+  notificationCount?: number;
+  onNotificationsPress?: () => void;
 };
 
 export default function AppHeader({
   onMenuPress,
   onProfilePress,
+  rightAction = 'profile',
+  notificationCount = 0,
+  onNotificationsPress,
 }: AppHeaderProps) {
   return (
     <View style={styles.container}>
@@ -28,7 +34,6 @@ export default function AppHeader({
 
       {/* Logo + App name */}
       <View style={styles.brandContainer}>
-        {/* Replace this with your actual logo */}
         <Image
           source={require('@/assets/images/sliit_stack.png')}
           style={styles.logo}
@@ -38,19 +43,42 @@ export default function AppHeader({
         <Text style={styles.brandText}>SLIITStack</Text>
       </View>
 
-      {/* Profile */}
-      <Pressable
-        onPress={onProfilePress}
-        style={({ pressed }) => [
-          styles.iconButton,
-          pressed && styles.iconButtonPressed,
-        ]}
-        hitSlop={4}
-        accessibilityRole="button"
-        accessibilityLabel="Open profile"
-      >
-        <Ionicons name="person-circle-outline" size={26} color="#111827" />
-      </Pressable>
+      {/* Notifications (Home) or Profile (all other screens) */}
+      {rightAction === 'notifications' ? (
+        <Pressable
+          onPress={onNotificationsPress}
+          style={({ pressed }) => [
+            styles.iconButton,
+            pressed && styles.iconButtonPressed,
+          ]}
+          hitSlop={4}
+          accessibilityRole="button"
+          accessibilityLabel="Notifications"
+        >
+          <Ionicons name="notifications" size={24} color="#F59E0B" />
+
+          {notificationCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {notificationCount > 9 ? '9+' : notificationCount}
+              </Text>
+            </View>
+          )}
+        </Pressable>
+      ) : (
+        <Pressable
+          onPress={onProfilePress}
+          style={({ pressed }) => [
+            styles.iconButton,
+            pressed && styles.iconButtonPressed,
+          ]}
+          hitSlop={4}
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
+        >
+          <Ionicons name="person-circle-outline" size={26} color="#111827" />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -95,5 +123,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontStyle: 'italic',
     color: '#111827',
+  },
+
+  badge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 3,
+    borderRadius: 8,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

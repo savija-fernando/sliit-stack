@@ -1,5 +1,5 @@
-import ScreenPlaceholder from '@/components/ScreenPlaceholder';
+import HomeScreen from '@/features/dashboard/screens/HomeScreen';
 
-export default function HomeScreen() {
-  return <ScreenPlaceholder title="Home" />;
+export default function HomeRoute() {
+  return <HomeScreen />;
 }

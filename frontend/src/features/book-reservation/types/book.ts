@@ -19,3 +19,13 @@ export type BookSearchParams = {
   search?: string;
   genre?: string;
 };
+
+export type WaitingListEntry = {
+  bookId: string;
+  position: number;
+  status: 'Waiting' | 'Ready';
+  estimatedDays?: number; // when status is Waiting
+  collectBy?: string; // when status is Ready, e.g. "tomorrow, 5:00 pm"
+};
+
+export type WaitingListItem = WaitingListEntry & { book: Book };
