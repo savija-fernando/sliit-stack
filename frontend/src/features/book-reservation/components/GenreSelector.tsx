@@ -2,10 +2,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type GenreSelectorProps = {
   selectedGenre: string | null;
-  onSelectGenre: (genre: string) => void;
+  // Tapping the selected chip again passes null (deselect)
+  onSelectGenre: (genre: string | null) => void;
 };
 
 const genres = [
+  'All',
   'Fiction',
   'Academic',
   'Reference',
@@ -24,10 +26,13 @@ export default function GenreSelector({
         return (
           <Pressable
             key={genre}
-            onPress={() => onSelectGenre(genre)}
-            style={[
+            onPress={() => onSelectGenre(selected ? null : genre)}
+            accessibilityRole="button"
+            accessibilityState={{ selected }}
+            style={({ pressed }) => [
               styles.genreButton,
               selected && styles.selectedGenreButton,
+              pressed && !selected && styles.pressedGenreButton,
             ]}
           >
             <Text
@@ -53,18 +58,26 @@ const styles = StyleSheet.create({
   },
 
   genreButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    minHeight: 38,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+  },
+
+  pressedGenreButton: {
     backgroundColor: '#F1F5F9',
-    borderRadius: 6,
   },
 
   selectedGenreButton: {
     backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
   },
 
   genreText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#374151',
   },
 

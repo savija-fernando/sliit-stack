@@ -1,5 +1,5 @@
-import SearchBooksScreen from '@/features/book-reservation/screens/SearchBooksScreen';
+import HomeScreen from '@/features/dashboard/screens/HomeScreen';
 
-export default function HomeScreen() {
-  return <SearchBooksScreen />;
+export default function HomeRoute() {
+  return <HomeScreen />;
 }
