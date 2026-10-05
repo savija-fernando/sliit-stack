@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -20,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import {
   useFocusEffect,
+  useLocalSearchParams,
   useRouter,
   type Href,
 } from 'expo-router';
@@ -31,12 +33,14 @@ import StaffBottomNav from '@/features/dashboard/components/StaffBottomNav';
 import ReservationQueueCard from '@/features/reservations/components/ReservationQueueCard';
 
 import ReservationStatusTabs from './ReservationStatusTabs';
+import ReservationTypeTabs from './ReservationTypeTabs';
 
 import {
   getReservations,
 } from './reservationStore';
 
 import type {
+  ReservationKind,
   ReservationRecord,
   ReservationStatus,
 } from '../../../types/reservation';
@@ -50,11 +54,32 @@ type QueueStatus =
 export default function BookReservationQueueScreen() {
   const router = useRouter();
 
+  const params =
+    useLocalSearchParams<{
+      type?: string;
+    }>();
+
   const [
     reservations,
     setReservations,
   ] = useState<ReservationRecord[]>(
     () => getReservations(),
+  );
+
+  const [
+    activeType,
+    setActiveType,
+  ] = useState<ReservationKind>(
+    getReservationType(
+      params.type,
+    ),
+  );
+
+  const [
+    activeStatus,
+    setActiveStatus,
+  ] = useState<QueueStatus>(
+    'pending',
   );
 
   const [
@@ -67,20 +92,27 @@ export default function BookReservationQueueScreen() {
     setSearchQuery,
   ] = useState('');
 
-  const [
-    activeStatus,
-    setActiveStatus,
-  ] = useState<QueueStatus>(
-    'pending',
-  );
+  /*
+   * If Dashboard opens:
+   *
+   * /staff-queues?type=book
+   * or
+   * /staff-queues?type=seat
+   *
+   * this automatically selects
+   * the correct queue type.
+   */
+  useEffect(() => {
+    setActiveType(
+      getReservationType(
+        params.type,
+      ),
+    );
+  }, [params.type]);
 
   /*
    * Refresh reservation data whenever
-   * this screen becomes active again.
-   *
-   * This allows a reservation that was
-   * updated on another screen to move
-   * into Approved / Rejected / Returned.
+   * the queue screen becomes active.
    */
   useFocusEffect(
     useCallback(() => {
@@ -105,6 +137,26 @@ export default function BookReservationQueueScreen() {
     Keyboard.dismiss();
   };
 
+  const handleTypeChange = (
+    type: ReservationKind,
+  ) => {
+    setActiveType(type);
+
+    /*
+     * Reset to Pending when switching
+     * between Book and Seat queues.
+     */
+    setActiveStatus('pending');
+
+    /*
+     * Clear previous search because a
+     * book search should not remain when
+     * switching to Seat reservations.
+     */
+    setSearchText('');
+    setSearchQuery('');
+  };
+
   const handleStatusChange = (
     status: ReservationStatus,
   ) => {
@@ -127,6 +179,10 @@ export default function BookReservationQueueScreen() {
 
       return reservations.filter(
         (reservation) => {
+          const matchesType =
+            reservation.kind ===
+            activeType;
+
           const matchesStatus =
             reservation.status ===
             activeStatus;
@@ -155,6 +211,7 @@ export default function BookReservationQueueScreen() {
               );
 
           return (
+            matchesType &&
             matchesStatus &&
             matchesSearch
           );
@@ -162,6 +219,7 @@ export default function BookReservationQueueScreen() {
       );
     }, [
       reservations,
+      activeType,
       activeStatus,
       searchQuery,
     ]);
@@ -169,12 +227,11 @@ export default function BookReservationQueueScreen() {
   return (
     <SafeAreaView style={styles.page}>
       <View style={styles.phoneContainer}>
-        {/* Header */}
         <AppHeader
           rightAction="profile"
         />
 
-        {/* Page title */}
+        {/* Page heading */}
         <View style={styles.titleRow}>
           <Pressable
             onPress={() =>
@@ -194,11 +251,11 @@ export default function BookReservationQueueScreen() {
           </Pressable>
 
           <Text style={styles.title}>
-            Book Reservation
+            Reservation Queues
           </Text>
         </View>
 
-        {/* Search section */}
+        {/* Search */}
         <View style={styles.searchSection}>
           <View style={styles.searchBox}>
             <TextInput
@@ -209,7 +266,11 @@ export default function BookReservationQueueScreen() {
               onSubmitEditing={
                 handleSearch
               }
-              placeholder="Search"
+              placeholder={
+                activeType === 'book'
+                  ? 'Search book reservation'
+                  : 'Search seat reservation'
+              }
               placeholderTextColor="#8A8A8A"
               returnKeyType="search"
               autoCorrect={false}
@@ -226,7 +287,6 @@ export default function BookReservationQueueScreen() {
               ]}
             />
 
-            {/* Clear search */}
             {(searchText !== '' ||
               searchQuery !== '') && (
               <Pressable
@@ -248,7 +308,6 @@ export default function BookReservationQueueScreen() {
             )}
           </View>
 
-          {/* Search button */}
           <Pressable
             style={({ pressed }) => [
               styles.searchButton,
@@ -268,7 +327,15 @@ export default function BookReservationQueueScreen() {
           </Pressable>
         </View>
 
-        {/* Status tabs */}
+        {/* Book / Seat selector */}
+        <ReservationTypeTabs
+          activeType={activeType}
+          onChange={
+            handleTypeChange
+          }
+        />
+
+        {/* Reservation status selector */}
         <View style={styles.tabsWrapper}>
           <ReservationStatusTabs
             activeStatus={
@@ -280,7 +347,7 @@ export default function BookReservationQueueScreen() {
           />
         </View>
 
-        {/* Reservation list */}
+        {/* Queue */}
         <ScrollView
           style={styles.listScroll}
           contentContainerStyle={
@@ -313,34 +380,52 @@ export default function BookReservationQueueScreen() {
           ) : (
             <View style={styles.emptyState}>
               <Ionicons
-                name="file-tray-outline"
+                name={
+                  activeType === 'book'
+                    ? 'book-outline'
+                    : 'grid-outline'
+                }
                 size={40}
                 color="#9CA3AF"
               />
 
               <Text style={styles.emptyTitle}>
-                No reservations found
+                No{' '}
+                {activeType === 'book'
+                  ? 'book'
+                  : 'seat'}{' '}
+                reservations found
               </Text>
 
               <Text style={styles.emptyText}>
-                Try another search or
-                reservation status.
+                Try another search or reservation status.
               </Text>
             </View>
           )}
         </ScrollView>
 
-        {/* Staff navigation */}
         <StaffBottomNav active="queues" />
       </View>
     </SafeAreaView>
   );
 }
 
+function getReservationType(
+  type: string | undefined,
+): ReservationKind {
+  if (type === 'seat') {
+    return 'seat';
+  }
+
+  return 'book';
+}
+
 const styles = StyleSheet.create({
   page: {
     flex: 1,
+
     backgroundColor: '#E5E7EB',
+
     alignItems: 'center',
   },
 

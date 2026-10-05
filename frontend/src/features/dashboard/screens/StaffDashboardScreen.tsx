@@ -11,6 +11,11 @@ import {
   MaterialCommunityIcons,
 } from '@expo/vector-icons';
 
+import {
+  useRouter,
+  type Href,
+} from 'expo-router';
+
 import AppHeader from '@/components/AppHeader';
 
 import StaffActivityRow from '../components/StaffActivityRow';
@@ -18,6 +23,20 @@ import StaffBottomNav from '../components/StaffBottomNav';
 import StaffStatCard from '../components/StaffStatCard';
 
 export default function StaffDashboardScreen() {
+  const router = useRouter();
+
+  const openBookRequests = () => {
+    router.push(
+      '/staff-queues?type=book' as Href,
+    );
+  };
+
+  const openSeatRequests = () => {
+    router.push(
+      '/staff-queues?type=seat' as Href,
+    );
+  };
+
   return (
     <SafeAreaView style={styles.page}>
       <View style={styles.phoneContainer}>
@@ -44,9 +63,11 @@ export default function StaffDashboardScreen() {
 
           {/* Statistics */}
           <View style={styles.statsGrid}>
+            {/* Book Requests */}
             <StaffStatCard
               value="12"
               label="Book Requests"
+              onPress={openBookRequests}
               icon={
                 <Ionicons
                   name="book"
@@ -56,9 +77,11 @@ export default function StaffDashboardScreen() {
               }
             />
 
+            {/* Seat Requests */}
             <StaffStatCard
               value="09"
               label="Seat Requests"
+              onPress={openSeatRequests}
               icon={
                 <MaterialCommunityIcons
                   name="seat"
@@ -68,6 +91,7 @@ export default function StaffDashboardScreen() {
               }
             />
 
+            {/* Expired - will connect later */}
             <StaffStatCard
               value="26"
               label="Expired Today"
@@ -80,6 +104,7 @@ export default function StaffDashboardScreen() {
               }
             />
 
+            {/* Open Issues - will connect later */}
             <StaffStatCard
               value="04"
               label="Open Issues"
@@ -108,7 +133,7 @@ export default function StaffDashboardScreen() {
             </View>
           </View>
 
-          {/* Recent activity list */}
+          {/* Recent activity */}
           <View style={styles.activityList}>
             <StaffActivityRow
               title="Book Reservation"
@@ -132,7 +157,6 @@ export default function StaffDashboardScreen() {
           </View>
         </ScrollView>
 
-        {/* Working bottom navigation */}
         <StaffBottomNav active="dashboard" />
       </View>
     </SafeAreaView>
