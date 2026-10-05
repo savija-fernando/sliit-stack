@@ -1,14 +1,15 @@
-
 import { supabase } from './supabase';
+import { testBookService } from './testBooks';
 
 export async function testStudentLogin(
   email: string,
   password: string
 ) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  const { data, error } =
+    await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
   if (error) {
     console.error('Login failed:', error.message);
@@ -18,15 +19,5 @@ export async function testStudentLogin(
   console.log('Student login successful!');
   console.log('Signed-in user ID:', data.user.id);
 
-  const { data: books, error: booksError } = await supabase
-    .from('books')
-    .select('id, title')
-    .limit(5);
-
-  if (booksError) {
-    console.error('Books query failed:', booksError);
-    return;
-  }
-
-  console.log('Books query successful:', books);
+  await testBookService();
 }

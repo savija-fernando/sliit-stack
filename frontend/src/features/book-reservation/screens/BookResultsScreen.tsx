@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Image } from 'react-native';
 import {
   ActivityIndicator,
   Pressable,
@@ -79,7 +80,14 @@ export default function BookResultsScreen() {
               ]}
             >
               <View style={styles.cover}>
-                <Ionicons name="book" size={32} color="#080B13" />
+                {book.coverUrl ? (
+                  <Image
+                    source={{ uri: book.coverUrl }}
+                    style={styles.coverImage}
+                  />
+                ) : (
+                  <Ionicons name="book" size={32} color="#080B13" />
+                )}
               </View>
 
               <View style={styles.bookInfo}>
@@ -196,4 +204,10 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
   },
+  coverImage: {
+  width: '100%',
+  height: '100%',
+  borderRadius: 8,
+  resizeMode: 'cover',
+},
 });
