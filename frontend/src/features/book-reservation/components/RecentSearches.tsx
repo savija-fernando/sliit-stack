@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type RecentSearchesProps = {
@@ -10,13 +11,19 @@ export default function RecentSearches({
   onSelectSearch,
 }: RecentSearchesProps) {
   return (
-    <View style={styles.container}>
-      {searches.map((search) => (
+    <View>
+      {searches.map((search, index) => (
         <Pressable
           key={search}
           onPress={() => onSelectSearch(search)}
-          style={styles.item}
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.item,
+            index < searches.length - 1 && styles.divider,
+            pressed && styles.itemPressed,
+          ]}
         >
+          <Ionicons name="time-outline" size={18} color="#9CA3AF" />
           <Text style={styles.text}>{search}</Text>
         </Pressable>
       ))}
@@ -25,16 +32,24 @@ export default function RecentSearches({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 2,
+  item: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
 
-  item: {
-    paddingVertical: 8,
+  divider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+  },
+
+  itemPressed: {
+    backgroundColor: '#F8FAFC',
   },
 
   text: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#374151',
   },
 });
