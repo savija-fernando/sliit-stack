@@ -103,10 +103,7 @@ export default function BookReservationQueueScreen() {
   );
 
   const handleSearch = () => {
-    setSearchQuery(
-      searchText.trim(),
-    );
-
+    setSearchQuery(searchText.trim());
     Keyboard.dismiss();
   };
 
@@ -165,15 +162,13 @@ export default function BookReservationQueueScreen() {
 
   return (
     <SafeAreaView style={styles.page}>
-      <View
-        style={
-          styles.phoneContainer
-        }
-      >
+      <View style={styles.phoneContainer}>
+        {/* Header */}
         <AppHeader
           rightAction="profile"
         />
 
+        {/* Page title */}
         <View style={styles.titleRow}>
           <Pressable
             onPress={() =>
@@ -197,16 +192,9 @@ export default function BookReservationQueueScreen() {
           </Text>
         </View>
 
-        <View
-          style={
-            styles.searchSection
-          }
-        >
-          <View
-            style={
-              styles.searchBox
-            }
-          >
+        {/* Search */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchBox}>
             <TextInput
               value={searchText}
               onChangeText={
@@ -217,9 +205,7 @@ export default function BookReservationQueueScreen() {
               }
               placeholder="Search"
               placeholderTextColor="#8A8A8A"
-              style={
-                styles.searchInput
-              }
+              style={styles.searchInput}
               returnKeyType="search"
               autoCorrect={false}
             />
@@ -243,11 +229,8 @@ export default function BookReservationQueueScreen() {
           </Pressable>
         </View>
 
-        <View
-          style={
-            styles.tabsWrapper
-          }
-        >
+        {/* Status tabs */}
+        <View style={styles.tabsWrapper}>
           <ReservationStatusTabs
             activeStatus={
               activeStatus
@@ -258,6 +241,7 @@ export default function BookReservationQueueScreen() {
           />
         </View>
 
+        {/* Reservation list */}
         <ScrollView
           style={styles.listScroll}
           contentContainerStyle={
@@ -273,40 +257,31 @@ export default function BookReservationQueueScreen() {
             filteredReservations.map(
               (reservation) => (
                 <ReservationQueueCard
-                  key={
-                    reservation.id
-                  }
+                  key={reservation.id}
                   reservation={
                     reservation
+                  }
+                  onPress={() =>
+                    router.push(
+                      `/reservation-details?id=${reservation.id}` as Href,
+                    )
                   }
                 />
               ),
             )
           ) : (
-            <View
-              style={
-                styles.emptyState
-              }
-            >
+            <View style={styles.emptyState}>
               <Ionicons
                 name="file-tray-outline"
                 size={40}
                 color="#9CA3AF"
               />
 
-              <Text
-                style={
-                  styles.emptyTitle
-                }
-              >
+              <Text style={styles.emptyTitle}>
                 No reservations found
               </Text>
 
-              <Text
-                style={
-                  styles.emptyText
-                }
-              >
+              <Text style={styles.emptyText}>
                 Try another search or
                 reservation status.
               </Text>
@@ -314,6 +289,7 @@ export default function BookReservationQueueScreen() {
           )}
         </ScrollView>
 
+        {/* Staff bottom navigation */}
         <StaffBottomNav active="queues" />
       </View>
     </SafeAreaView>
