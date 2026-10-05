@@ -14,6 +14,7 @@ import {
 import AppHeader from '@/components/AppHeader';
 
 import StaffActivityRow from '../components/StaffActivityRow';
+import StaffBottomNav from '../components/StaffBottomNav';
 import StaffStatCard from '../components/StaffStatCard';
 
 export default function StaffDashboardScreen() {
@@ -21,9 +22,7 @@ export default function StaffDashboardScreen() {
     <SafeAreaView style={styles.page}>
       <View style={styles.phoneContainer}>
         {/* Header */}
-        <AppHeader
-          rightAction="profile"
-        />
+        <AppHeader rightAction="profile" />
 
         {/* Main dashboard */}
         <ScrollView
@@ -133,32 +132,8 @@ export default function StaffDashboardScreen() {
           </View>
         </ScrollView>
 
-        {/* Bottom navigation */}
-        <View style={styles.bottomNav}>
-          <View style={styles.activeNavItem}>
-            <Text style={styles.activeNavText}>
-              Dashboard
-            </Text>
-          </View>
-
-          <View style={styles.navItem}>
-            <Text style={styles.navText}>
-              Queues
-            </Text>
-          </View>
-
-          <View style={styles.navItem}>
-            <Text style={styles.navText}>
-              Monitoring
-            </Text>
-          </View>
-
-          <View style={styles.navItem}>
-            <Text style={styles.navText}>
-              Profile
-            </Text>
-          </View>
-        </View>
+        {/* Working bottom navigation */}
+        <StaffBottomNav active="dashboard" />
       </View>
     </SafeAreaView>
   );
@@ -167,18 +142,14 @@ export default function StaffDashboardScreen() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-
     backgroundColor: '#E5E7EB',
-
     alignItems: 'center',
   },
 
   phoneContainer: {
     flex: 1,
-
     width: '100%',
     maxWidth: 390,
-
     backgroundColor: '#F6F8FC',
 
     shadowColor: '#000000',
@@ -228,30 +199,22 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 24,
-
     fontWeight: '800',
-
     color: '#111827',
   },
 
   subtitle: {
     marginTop: 4,
-
     width: 245,
-
     fontSize: 11,
     lineHeight: 16,
-
     color: '#777777',
   },
 
   statsGrid: {
     flexDirection: 'row',
-
     flexWrap: 'wrap',
-
     justifyContent: 'space-between',
-
     rowGap: 14,
   },
 
@@ -260,95 +223,35 @@ const styles = StyleSheet.create({
     marginBottom: 11,
 
     flexDirection: 'row',
-
     alignItems: 'center',
     justifyContent: 'space-between',
   },
 
   activityTitle: {
     fontSize: 18,
-
     fontWeight: '800',
-
     color: '#111827',
   },
 
   updatedContainer: {
     flexDirection: 'row',
-
     alignItems: 'center',
   },
 
   smallDot: {
     width: 4,
     height: 4,
-
     borderRadius: 2,
-
     backgroundColor: '#345A9C',
-
     marginRight: 4,
   },
 
   updatedText: {
     fontSize: 8,
-
     color: '#888888',
   },
 
   activityList: {
     gap: 9,
-  },
-
-  bottomNav: {
-    minHeight: 60,
-
-    paddingHorizontal: 7,
-    paddingVertical: 7,
-
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-
-    backgroundColor: '#FFFFFF',
-
-    flexDirection: 'row',
-
-    alignItems: 'center',
-  },
-
-  navItem: {
-    flex: 1,
-
-    alignItems: 'center',
-
-    paddingVertical: 9,
-  },
-
-  activeNavItem: {
-    flex: 1,
-
-    alignItems: 'center',
-
-    paddingVertical: 9,
-
-    marginHorizontal: 3,
-
-    borderRadius: 18,
-
-    backgroundColor: '#DCE7FA',
-  },
-
-  navText: {
-    fontSize: 10,
-
-    color: '#374151',
-  },
-
-  activeNavText: {
-    fontSize: 10,
-
-    fontWeight: '700',
-
-    color: '#334E8A',
   },
 });
