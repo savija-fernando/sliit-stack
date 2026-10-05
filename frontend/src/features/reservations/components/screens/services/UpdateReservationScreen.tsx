@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import {
-  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -22,6 +21,11 @@ import {
 import AppHeader from '@/components/AppHeader';
 
 import StaffBottomNav from '@/features/dashboard/components/StaffBottomNav';
+
+import {
+  getReservationById,
+  updateReservation,
+} from './reservationStore';
 
 type ReservationUpdateStatus =
   | 'approved'
@@ -51,43 +55,68 @@ const statusOptions: {
   },
 ];
 
-const bookDetails = {
-  title: 'Introduction to Programming',
-  author: 'J.H Bernard',
-  published: '21st June 2016',
-};
-
 export default function UpdateReservationScreen() {
   const router = useRouter();
 
-  const params = useLocalSearchParams();
+  const params =
+    useLocalSearchParams<{
+      id?: string;
+    }>();
 
   const reservationId =
     typeof params.id === 'string'
       ? params.id
-      : 'B123S45091';
+      : '';
 
-  const [selectedStatus, setSelectedStatus] =
-    useState<ReservationUpdateStatus>('approved');
+  const reservation =
+    getReservationById(
+      reservationId,
+    );
 
-  const [note, setNote] =
-    useState('');
+  const [
+    selectedStatus,
+    setSelectedStatus,
+  ] =
+    useState<ReservationUpdateStatus>(
+      getInitialStatus(
+        reservation?.status,
+      ),
+    );
+
+  const [
+    note,
+    setNote,
+  ] = useState(
+    reservation?.note ?? '',
+  );
 
   const handleUpdate = () => {
-    Alert.alert(
-      'Reservation Updated',
-      `Reservation ${reservationId} has been updated to ${selectedStatus}.`,
-      [
-        {
-          text: 'OK',
-          onPress: () =>
-            router.replace(
-              `/reservation-details?id=${reservationId}&status=${selectedStatus}` as Href,
-            ),
-        },
-      ],
+    updateReservation(
+      reservationId,
+      selectedStatus,
+      note.trim(),
+    );
+
+    router.replace(
+      `/reservation-details?id=${reservationId}` as Href,
     );
   };
+
+  if (!reservation) {
+    return (
+      <SafeAreaView style={styles.page}>
+        <View style={styles.phoneContainer}>
+          <AppHeader rightAction="profile" />
+
+          <View style={styles.notFound}>
+            <Text style={styles.notFoundText}>
+              Reservation not found.
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.page}>
@@ -96,11 +125,14 @@ export default function UpdateReservationScreen() {
 
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={
+            styles.content
+          }
+          showsVerticalScrollIndicator={
+            false
+          }
           keyboardShouldPersistTaps="handled"
         >
-          {/* Title */}
           <View style={styles.titleRow}>
             <Pressable
               onPress={() =>
@@ -109,8 +141,6 @@ export default function UpdateReservationScreen() {
                 )
               }
               style={styles.backButton}
-              accessibilityRole="button"
-              accessibilityLabel="Back to reservation details"
             >
               <Ionicons
                 name="arrow-back-circle"
@@ -124,7 +154,6 @@ export default function UpdateReservationScreen() {
             </Text>
           </View>
 
-          {/* Book details */}
           <View style={styles.bookCard}>
             <View style={styles.bookIcon}>
               <Ionicons
@@ -136,15 +165,16 @@ export default function UpdateReservationScreen() {
 
             <View style={styles.bookInformation}>
               <Text style={styles.bookTitle}>
-                {bookDetails.title}
+                {reservation.title}
               </Text>
 
               <Text style={styles.bookMeta}>
-                By {bookDetails.author}
+                By {reservation.author}
               </Text>
 
               <Text style={styles.bookMeta}>
-                Published on {bookDetails.published}
+                Published on{' '}
+                {reservation.published}
               </Text>
 
               <View style={styles.availableBadge}>
@@ -155,66 +185,74 @@ export default function UpdateReservationScreen() {
             </View>
           </View>
 
-          {/* Reservation ID */}
           <View style={styles.reservationInfo}>
             <Text style={styles.infoLabel}>
               Reservation ID
             </Text>
 
             <Text style={styles.infoValue}>
-              {reservationId}
+              {reservation.id}
             </Text>
           </View>
 
-          {/* Status section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               Change Status
             </Text>
 
             <View style={styles.statusCard}>
-              {statusOptions.map((option) => {
-                const isSelected =
-                  selectedStatus === option.value;
+              {statusOptions.map(
+                (option) => {
+                  const isSelected =
+                    selectedStatus ===
+                    option.value;
 
-                return (
-                  <Pressable
-                    key={option.value}
-                    style={styles.statusOption}
-                    onPress={() =>
-                      setSelectedStatus(option.value)
-                    }
-                  >
-                    <View
-                      style={[
-                        styles.radioOuter,
-                        isSelected &&
-                          styles.radioOuterSelected,
-                      ]}
+                  return (
+                    <Pressable
+                      key={option.value}
+                      style={
+                        styles.statusOption
+                      }
+                      onPress={() =>
+                        setSelectedStatus(
+                          option.value,
+                        )
+                      }
                     >
-                      {isSelected && (
-                        <View
-                          style={styles.radioInner}
-                        />
-                      )}
-                    </View>
+                      <View
+                        style={[
+                          styles.radioOuter,
 
-                    <Text
-                      style={[
-                        styles.statusLabel,
-                        isSelected &&
-                          styles.statusLabelSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+                          isSelected &&
+                            styles.radioOuterSelected,
+                        ]}
+                      >
+                        {isSelected && (
+                          <View
+                            style={
+                              styles.radioInner
+                            }
+                          />
+                        )}
+                      </View>
+
+                      <Text
+                        style={[
+                          styles.statusLabel,
+
+                          isSelected &&
+                            styles.statusLabelSelected,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  );
+                },
+              )}
             </View>
           </View>
 
-          {/* Note */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               Add Note
@@ -240,10 +278,10 @@ export default function UpdateReservationScreen() {
             </Text>
           </View>
 
-          {/* Update button */}
           <Pressable
             style={({ pressed }) => [
               styles.updateButton,
+
               pressed &&
                 styles.updateButtonPressed,
             ]}
@@ -267,306 +305,332 @@ export default function UpdateReservationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-  },
+function getInitialStatus(
+  status?: string,
+): ReservationUpdateStatus {
+  if (
+    status === 'approved' ||
+    status === 'rejected' ||
+    status === 'returned' ||
+    status === 'expired'
+  ) {
+    return status;
+  }
 
-  phoneContainer: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 390,
-    backgroundColor: '#F7F9FC',
+  return 'approved';
+}
 
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 0,
+const styles =
+  StyleSheet.create({
+    page: {
+      flex: 1,
+
+      backgroundColor:
+        '#E5E7EB',
+
+      alignItems: 'center',
     },
 
-    elevation: 2,
-  },
+    phoneContainer: {
+      flex: 1,
 
-  scrollView: {
-    flex: 1,
-  },
+      width: '100%',
+      maxWidth: 390,
 
-  content: {
-    paddingHorizontal: 15,
-    paddingTop: 13,
-    paddingBottom: 25,
-  },
-
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-
-    marginBottom: 16,
-  },
-
-  backButton: {
-    marginRight: 7,
-  },
-
-  pageTitle: {
-    flex: 1,
-
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111111',
-  },
-
-  bookCard: {
-    padding: 14,
-
-    borderRadius: 10,
-
-    backgroundColor: '#FFFFFF',
-
-    flexDirection: 'row',
-    alignItems: 'center',
-
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: {
-      width: 0,
-      height: 2,
+      backgroundColor:
+        '#F7F9FC',
     },
 
-    elevation: 2,
-  },
+    scrollView: {
+      flex: 1,
+    },
 
-  bookIcon: {
-    width: 48,
-    height: 56,
+    content: {
+      paddingHorizontal: 15,
+      paddingTop: 13,
+      paddingBottom: 25,
+    },
 
-    borderRadius: 6,
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
 
-    backgroundColor: '#111827',
+      marginBottom: 16,
+    },
 
-    alignItems: 'center',
-    justifyContent: 'center',
+    backButton: {
+      marginRight: 7,
+    },
 
-    marginRight: 12,
-  },
+    pageTitle: {
+      flex: 1,
 
-  bookInformation: {
-    flex: 1,
-  },
+      fontSize: 18,
+      fontWeight: '800',
 
-  bookTitle: {
-    fontSize: 14,
-    fontWeight: '800',
+      color: '#111111',
+    },
 
-    color: '#111111',
-  },
+    bookCard: {
+      padding: 14,
 
-  bookMeta: {
-    marginTop: 3,
+      borderRadius: 10,
 
-    fontSize: 10,
+      backgroundColor:
+        '#FFFFFF',
 
-    color: '#555555',
-  },
+      flexDirection: 'row',
+      alignItems: 'center',
 
-  availableBadge: {
-    marginTop: 7,
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
+    },
 
-    alignSelf: 'flex-start',
+    bookIcon: {
+      width: 48,
+      height: 56,
 
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+      borderRadius: 6,
 
-    borderRadius: 4,
+      backgroundColor:
+        '#111827',
 
-    backgroundColor: '#16A34A',
-  },
+      alignItems: 'center',
+      justifyContent: 'center',
 
-  availableText: {
-    fontSize: 8,
-    fontWeight: '700',
+      marginRight: 12,
+    },
 
-    color: '#FFFFFF',
-  },
+    bookInformation: {
+      flex: 1,
+    },
 
-  reservationInfo: {
-    minHeight: 52,
+    bookTitle: {
+      fontSize: 14,
+      fontWeight: '800',
 
-    marginTop: 14,
+      color: '#111111',
+    },
 
-    paddingHorizontal: 13,
-    paddingVertical: 12,
+    bookMeta: {
+      marginTop: 3,
 
-    borderRadius: 8,
+      fontSize: 10,
 
-    backgroundColor: '#FFFFFF',
+      color: '#555555',
+    },
 
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    availableBadge: {
+      marginTop: 7,
 
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+      alignSelf: 'flex-start',
 
-  infoLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+      paddingHorizontal: 10,
+      paddingVertical: 3,
 
-    color: '#333333',
-  },
+      borderRadius: 4,
 
-  infoValue: {
-    fontSize: 10,
+      backgroundColor:
+        '#16A34A',
+    },
 
-    color: '#555555',
-  },
+    availableText: {
+      fontSize: 8,
+      fontWeight: '700',
 
-  section: {
-    marginTop: 20,
-  },
+      color: '#FFFFFF',
+    },
 
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    reservationInfo: {
+      minHeight: 52,
 
-    color: '#111827',
-  },
+      marginTop: 14,
 
-  optionalText: {
-    marginTop: 2,
+      paddingHorizontal: 13,
+      paddingVertical: 12,
 
-    fontSize: 9,
+      borderRadius: 8,
 
-    color: '#9CA3AF',
-  },
+      backgroundColor:
+        '#FFFFFF',
 
-  statusCard: {
-    marginTop: 10,
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
 
-    paddingHorizontal: 13,
-    paddingVertical: 5,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent:
+        'space-between',
+    },
 
-    borderRadius: 9,
+    infoLabel: {
+      fontSize: 11,
+      fontWeight: '700',
 
-    backgroundColor: '#FFFFFF',
+      color: '#333333',
+    },
 
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
+    infoValue: {
+      fontSize: 10,
 
-  statusOption: {
-    minHeight: 45,
+      color: '#555555',
+    },
 
-    flexDirection: 'row',
-    alignItems: 'center',
+    section: {
+      marginTop: 20,
+    },
 
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F2F5',
-  },
+    sectionTitle: {
+      fontSize: 15,
+      fontWeight: '800',
 
-  radioOuter: {
-    width: 18,
-    height: 18,
+      color: '#111827',
+    },
 
-    borderRadius: 9,
+    optionalText: {
+      marginTop: 2,
 
-    borderWidth: 2,
-    borderColor: '#9CA3AF',
+      fontSize: 9,
 
-    alignItems: 'center',
-    justifyContent: 'center',
+      color: '#9CA3AF',
+    },
 
-    marginRight: 11,
-  },
+    statusCard: {
+      marginTop: 10,
 
-  radioOuterSelected: {
-    borderColor: '#08245B',
-  },
+      paddingHorizontal: 13,
+      paddingVertical: 5,
 
-  radioInner: {
-    width: 9,
-    height: 9,
+      borderRadius: 9,
 
-    borderRadius: 5,
+      backgroundColor:
+        '#FFFFFF',
 
-    backgroundColor: '#08245B',
-  },
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
+    },
 
-  statusLabel: {
-    fontSize: 12,
+    statusOption: {
+      minHeight: 45,
 
-    color: '#4B5563',
-  },
+      flexDirection: 'row',
+      alignItems: 'center',
 
-  statusLabelSelected: {
-    fontWeight: '700',
+      borderBottomWidth: 1,
+      borderBottomColor:
+        '#F0F2F5',
+    },
 
-    color: '#08245B',
-  },
+    radioOuter: {
+      width: 18,
+      height: 18,
 
-  noteInput: {
-    height: 105,
+      borderRadius: 9,
 
-    marginTop: 8,
+      borderWidth: 2,
+      borderColor: '#9CA3AF',
 
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+      alignItems: 'center',
+      justifyContent: 'center',
 
-    borderRadius: 8,
+      marginRight: 11,
+    },
 
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    radioOuterSelected: {
+      borderColor: '#08245B',
+    },
 
-    backgroundColor: '#FFFFFF',
+    radioInner: {
+      width: 9,
+      height: 9,
 
-    fontSize: 12,
+      borderRadius: 5,
 
-    color: '#111827',
-  },
+      backgroundColor:
+        '#08245B',
+    },
 
-  characterCount: {
-    marginTop: 4,
+    statusLabel: {
+      fontSize: 12,
 
-    textAlign: 'right',
+      color: '#4B5563',
+    },
 
-    fontSize: 9,
+    statusLabelSelected: {
+      fontWeight: '700',
 
-    color: '#9CA3AF',
-  },
+      color: '#08245B',
+    },
 
-  updateButton: {
-    height: 47,
+    noteInput: {
+      height: 105,
 
-    marginTop: 22,
+      marginTop: 8,
 
-    borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
 
-    backgroundColor: '#08245B',
+      borderRadius: 8,
 
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: '#D1D5DB',
 
-    gap: 7,
-  },
+      backgroundColor:
+        '#FFFFFF',
 
-  updateButtonPressed: {
-    opacity: 0.85,
-  },
+      fontSize: 12,
 
-  updateButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
+      color: '#111827',
+    },
 
-    color: '#FFFFFF',
-  },
-});
+    characterCount: {
+      marginTop: 4,
+
+      textAlign: 'right',
+
+      fontSize: 9,
+
+      color: '#9CA3AF',
+    },
+
+    updateButton: {
+      height: 47,
+
+      marginTop: 22,
+
+      borderRadius: 8,
+
+      backgroundColor:
+        '#08245B',
+
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+
+      gap: 7,
+    },
+
+    updateButtonPressed: {
+      opacity: 0.85,
+    },
+
+    updateButtonText: {
+      fontSize: 13,
+      fontWeight: '700',
+
+      color: '#FFFFFF',
+    },
+
+    notFound: {
+      flex: 1,
+
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    notFoundText: {
+      fontSize: 14,
+
+      color: '#6B7280',
+    },
+  });

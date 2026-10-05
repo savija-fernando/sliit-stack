@@ -5,11 +5,15 @@ import {
   View,
 } from 'react-native';
 
-import type { ReservationStatus } from '../../../types/reservation';
+import type {
+  ReservationStatus,
+} from '../../../types/reservation';
 
 type Props = {
   activeStatus: ReservationStatus;
-  onChange: (status: ReservationStatus) => void;
+  onChange: (
+    status: ReservationStatus,
+  ) => void;
 };
 
 const tabs: {
@@ -28,6 +32,10 @@ const tabs: {
     label: 'Rejected',
     value: 'rejected',
   },
+  {
+    label: 'Returned',
+    value: 'returned',
+  },
 ];
 
 export default function ReservationStatusTabs({
@@ -37,25 +45,28 @@ export default function ReservationStatusTabs({
   return (
     <View style={styles.container}>
       {tabs.map((tab) => {
-        const active =
-          tab.value === activeStatus;
+        const isActive =
+          activeStatus === tab.value;
 
         return (
           <Pressable
             key={tab.value}
+            style={[
+              styles.tab,
+              isActive &&
+                styles.activeTab,
+            ]}
             onPress={() =>
               onChange(tab.value)
             }
-            style={[
-              styles.tab,
-              active && styles.activeTab,
-            ]}
           >
             <Text
               style={[
-                styles.text,
-                active && styles.activeText,
+                styles.tabText,
+                isActive &&
+                  styles.activeTabText,
               ]}
+              numberOfLines={1}
             >
               {tab.label}
             </Text>
@@ -68,34 +79,46 @@ export default function ReservationStatusTabs({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    gap: 10,
     marginTop: 14,
+
+    flexDirection: 'row',
+
+    borderRadius: 7,
+
+    backgroundColor: '#E5E7EB',
+
+    padding: 3,
   },
 
   tab: {
     flex: 1,
-    height: 38,
 
-    borderRadius: 6,
+    minHeight: 35,
+
+    borderRadius: 5,
 
     alignItems: 'center',
     justifyContent: 'center',
 
-    backgroundColor: '#E8E8E8',
+    paddingHorizontal: 2,
   },
 
   activeTab: {
     backgroundColor: '#08245B',
   },
 
-  text: {
-    fontSize: 11,
-    color: '#666666',
+  tabText: {
+    fontSize: 10,
+    fontWeight: '600',
+
+    color: '#6B7280',
+
+    textAlign: 'center',
   },
 
-  activeText: {
-    color: '#FFFFFF',
+  activeTabText: {
     fontWeight: '700',
+
+    color: '#FFFFFF',
   },
 });

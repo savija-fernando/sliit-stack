@@ -1,7 +1,12 @@
-import { useMemo, useState } from 'react';
+import {
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
 
 import {
   Keyboard,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,7 +17,9 @@ import {
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
+
 import {
+  useFocusEffect,
   useRouter,
   type Href,
 } from 'expo-router';
@@ -22,95 +29,93 @@ import AppHeader from '@/components/AppHeader';
 import StaffBottomNav from '@/features/dashboard/components/StaffBottomNav';
 
 import ReservationQueueCard from '@/features/reservations/components/ReservationQueueCard';
+
 import ReservationStatusTabs from './ReservationStatusTabs';
 
+import {
+  getReservations,
+} from './reservationStore';
+
 import type {
-  ReservationQueueItem,
+  ReservationRecord,
   ReservationStatus,
 } from '../../../types/reservation';
 
-const reservations: ReservationQueueItem[] = [
-  {
-    id: 'B123S45091',
-    title: 'Introduction to Programming',
-    studentId: 'IT23546789',
-    studentName: 'J.C.P Jayasooriya',
-    dateText: '30th August 2026',
-    status: 'pending',
-    kind: 'book',
-  },
-  {
-    id: 'B123S45092',
-    title: 'Fundamentals of Human Resource',
-    studentId: 'IT23539068',
-    studentName: 'A.L.S Silva',
-    dateText: '07th September 2026',
-    status: 'pending',
-    kind: 'book',
-  },
-  {
-    id: 'B123S45093',
-    title: 'Basics of DevOPS',
-    studentId: 'IT23445489',
-    studentName: 'Nimmaka K.A.T.R',
-    dateText: '07th September 2026',
-    status: 'pending',
-    kind: 'book',
-  },
-  {
-    id: 'B123S45094',
-    title: 'Human Biology',
-    studentId: 'IT23456789',
-    studentName: 'J.C.P Jayasooriya',
-    dateText: '08th September 2026',
-    status: 'pending',
-    kind: 'book',
-  },
-  {
-    id: 'B123S45095',
-    title: 'Database Systems',
-    studentId: 'IT23542111',
-    studentName: 'M.K. Fernando',
-    dateText: '09th September 2026',
-    status: 'approved',
-    kind: 'book',
-  },
-  {
-    id: 'B123S45096',
-    title: 'Software Engineering',
-    studentId: 'IT23540011',
-    studentName: 'S.N. Perera',
-    dateText: '09th September 2026',
-    status: 'rejected',
-    kind: 'book',
-  },
-];
+type QueueStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'returned';
 
 export default function BookReservationQueueScreen() {
   const router = useRouter();
 
-  const [searchText, setSearchText] =
-    useState('');
+  const [
+    reservations,
+    setReservations,
+  ] = useState<ReservationRecord[]>(
+    () => getReservations(),
+  );
 
-  const [searchQuery, setSearchQuery] =
-    useState('');
+  const [
+    searchText,
+    setSearchText,
+  ] = useState('');
+
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState('');
 
   const [
     activeStatus,
     setActiveStatus,
-  ] = useState<ReservationStatus>(
+  ] = useState<QueueStatus>(
     'pending',
   );
 
+  /*
+   * Refresh reservation data whenever
+   * this screen becomes active again.
+   *
+   * This allows a reservation that was
+   * updated on another screen to move
+   * into Approved / Rejected / Returned.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      setReservations(
+        getReservations(),
+      );
+    }, []),
+  );
+
   const handleSearch = () => {
-    setSearchQuery(searchText.trim());
+    setSearchQuery(
+      searchText.trim(),
+    );
+
+    Keyboard.dismiss();
+  };
+
+  const handleClearSearch = () => {
+    setSearchText('');
+    setSearchQuery('');
+
     Keyboard.dismiss();
   };
 
   const handleStatusChange = (
     status: ReservationStatus,
   ) => {
-    setActiveStatus(status);
+    if (
+      status === 'pending' ||
+      status === 'approved' ||
+      status === 'rejected' ||
+      status === 'returned'
+    ) {
+      setActiveStatus(status);
+    }
   };
 
   const filteredReservations =
@@ -156,6 +161,7 @@ export default function BookReservationQueueScreen() {
         },
       );
     }, [
+      reservations,
       activeStatus,
       searchQuery,
     ]);
@@ -192,7 +198,7 @@ export default function BookReservationQueueScreen() {
           </Text>
         </View>
 
-        {/* Search */}
+        {/* Search section */}
         <View style={styles.searchSection}>
           <View style={styles.searchBox}>
             <TextInput
@@ -205,15 +211,48 @@ export default function BookReservationQueueScreen() {
               }
               placeholder="Search"
               placeholderTextColor="#8A8A8A"
-              style={styles.searchInput}
               returnKeyType="search"
               autoCorrect={false}
+              style={[
+                styles.searchInput,
+
+                Platform.OS ===
+                  'web' &&
+                  ({
+                    outlineStyle:
+                      'none',
+                    outlineWidth: 0,
+                  } as any),
+              ]}
             />
+
+            {/* Clear search */}
+            {(searchText !== '' ||
+              searchQuery !== '') && (
+              <Pressable
+                onPress={
+                  handleClearSearch
+                }
+                style={
+                  styles.clearButton
+                }
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color="#777777"
+                />
+              </Pressable>
+            )}
           </View>
 
+          {/* Search button */}
           <Pressable
             style={({ pressed }) => [
               styles.searchButton,
+
               pressed &&
                 styles.searchButtonPressed,
             ]}
@@ -257,7 +296,9 @@ export default function BookReservationQueueScreen() {
             filteredReservations.map(
               (reservation) => (
                 <ReservationQueueCard
-                  key={reservation.id}
+                  key={
+                    reservation.id
+                  }
                   reservation={
                     reservation
                   }
@@ -289,7 +330,7 @@ export default function BookReservationQueueScreen() {
           )}
         </ScrollView>
 
-        {/* Staff bottom navigation */}
+        {/* Staff navigation */}
         <StaffBottomNav active="queues" />
       </View>
     </SafeAreaView>
@@ -305,13 +346,16 @@ const styles = StyleSheet.create({
 
   phoneContainer: {
     flex: 1,
+
     width: '100%',
     maxWidth: 390,
+
     backgroundColor: '#F7F9FC',
 
     shadowColor: '#000000',
     shadowOpacity: 0.06,
     shadowRadius: 8,
+
     shadowOffset: {
       width: 0,
       height: 0,
@@ -335,22 +379,27 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 19,
     fontWeight: '800',
+
     color: '#111111',
   },
 
   searchSection: {
     marginTop: 15,
+
     paddingHorizontal: 15,
 
     flexDirection: 'row',
+
     gap: 7,
   },
 
   searchBox: {
     flex: 1,
+
     height: 43,
 
-    paddingHorizontal: 12,
+    paddingLeft: 12,
+    paddingRight: 6,
 
     borderRadius: 6,
 
@@ -365,9 +414,27 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
+
     height: '100%',
+
+    borderWidth: 0,
+
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+
     fontSize: 13,
+
     color: '#111111',
+
+    backgroundColor: 'transparent',
+  },
+
+  clearButton: {
+    width: 32,
+    height: 40,
+
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   searchButton: {
@@ -392,12 +459,14 @@ const styles = StyleSheet.create({
 
   listScroll: {
     flex: 1,
+
     marginTop: 13,
   },
 
   listContent: {
     paddingHorizontal: 15,
     paddingBottom: 20,
+
     gap: 10,
   },
 

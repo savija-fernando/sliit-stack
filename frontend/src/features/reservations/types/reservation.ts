@@ -1,7 +1,9 @@
 export type ReservationStatus =
   | 'pending'
   | 'approved'
-  | 'rejected';
+  | 'rejected'
+  | 'returned'
+  | 'expired';
 
 export type ReservationKind =
   | 'book'
@@ -16,3 +18,13 @@ export type ReservationQueueItem = {
   status: ReservationStatus;
   kind: ReservationKind;
 };
+
+export type ReservationRecord =
+  ReservationQueueItem & {
+    author: string;
+    published: string;
+    reservedOn: string;
+    pickupDate: string;
+    dueDate: string;
+    note?: string;
+  };
