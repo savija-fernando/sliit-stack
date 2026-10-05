@@ -26,6 +26,7 @@ export default function RootLayout() {
         <Stack.Screen name="staff-dashboard" />
         <Stack.Screen name="staff-queues" />
         <Stack.Screen name="reservation-details" />
+        <Stack.Screen name="update-reservation" />
         <Stack.Screen name="book-reservation" />
       </Stack>
     </ThemeProvider>
