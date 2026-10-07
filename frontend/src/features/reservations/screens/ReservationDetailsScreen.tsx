@@ -78,6 +78,7 @@ export default function ReservationDetailsScreen() {
         <View style={styles.phoneContainer}>
           <AppHeader
             rightAction="profile"
+            sideMenu="staff"
           />
 
           <View style={styles.notFound}>
@@ -134,6 +135,7 @@ export default function ReservationDetailsScreen() {
       <View style={styles.phoneContainer}>
         <AppHeader
           rightAction="profile"
+          sideMenu="staff"
         />
 
         <ScrollView
@@ -145,7 +147,6 @@ export default function ReservationDetailsScreen() {
             false
           }
         >
-          {/* Page title */}
           <View style={styles.titleRow}>
             <Pressable
               onPress={
@@ -169,7 +170,6 @@ export default function ReservationDetailsScreen() {
             </Text>
           </View>
 
-          {/* Book / Seat information */}
           <View style={styles.resourceCard}>
             <View
               style={[
@@ -267,7 +267,6 @@ export default function ReservationDetailsScreen() {
             </View>
           </View>
 
-          {/* Reservation information */}
           <View style={styles.detailsCard}>
             <InfoRow
               label="Reservation ID"
@@ -317,7 +316,6 @@ export default function ReservationDetailsScreen() {
               }
             />
 
-            {/* Status */}
             <View style={styles.statusRow}>
               <Text style={styles.infoLabel}>
                 Reservation Status
@@ -342,7 +340,6 @@ export default function ReservationDetailsScreen() {
               </View>
             </View>
 
-            {/* Staff note */}
             {reservation.note ? (
               <InfoRow
                 label="Staff Note"
@@ -351,7 +348,6 @@ export default function ReservationDetailsScreen() {
             ) : null}
           </View>
 
-          {/* Update */}
           <Pressable
             style={({ pressed }) => [
               styles.updateButton,

@@ -213,10 +213,13 @@ export default function BookReservationQueueScreen() {
   return (
     <SafeAreaView style={styles.page}>
       <View style={styles.phoneContainer}>
+        {/* Header */}
         <AppHeader
           rightAction="profile"
+          sideMenu="staff"
         />
 
+        {/* Page title */}
         <View style={styles.titleRow}>
           <Pressable
             onPress={() =>
@@ -240,6 +243,7 @@ export default function BookReservationQueueScreen() {
           </Text>
         </View>
 
+        {/* Search */}
         <View style={styles.searchSection}>
           <View style={styles.searchBox}>
             <TextInput
@@ -311,6 +315,7 @@ export default function BookReservationQueueScreen() {
           </Pressable>
         </View>
 
+        {/* Book / Seat selector */}
         <ReservationTypeTabs
           activeType={activeType}
           onChange={
@@ -318,6 +323,7 @@ export default function BookReservationQueueScreen() {
           }
         />
 
+        {/* Status tabs */}
         <View style={styles.tabsWrapper}>
           <ReservationStatusTabs
             activeStatus={
@@ -332,6 +338,7 @@ export default function BookReservationQueueScreen() {
           />
         </View>
 
+        {/* Reservation list */}
         <ScrollView
           style={styles.listScroll}
           contentContainerStyle={

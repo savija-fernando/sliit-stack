@@ -77,6 +77,7 @@ export default function UpdateReservationScreen() {
         <View style={styles.phoneContainer}>
           <AppHeader
             rightAction="profile"
+            sideMenu="staff"
           />
 
           <View style={styles.notFound}>
@@ -158,6 +159,7 @@ export default function UpdateReservationScreen() {
       <View style={styles.phoneContainer}>
         <AppHeader
           rightAction="profile"
+          sideMenu="staff"
         />
 
         <ScrollView
@@ -170,7 +172,6 @@ export default function UpdateReservationScreen() {
           }
           keyboardShouldPersistTaps="handled"
         >
-          {/* Page title */}
           <View style={styles.titleRow}>
             <Pressable
               onPress={() =>
@@ -198,7 +199,6 @@ export default function UpdateReservationScreen() {
             </Text>
           </View>
 
-          {/* Book / Seat information */}
           <View style={styles.resourceCard}>
             <View
               style={[
@@ -300,7 +300,6 @@ export default function UpdateReservationScreen() {
             </View>
           </View>
 
-          {/* Reservation ID */}
           <View style={styles.reservationInfo}>
             <Text style={styles.infoLabel}>
               Reservation ID
@@ -311,7 +310,6 @@ export default function UpdateReservationScreen() {
             </Text>
           </View>
 
-          {/* Status */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               Change Status
@@ -368,7 +366,6 @@ export default function UpdateReservationScreen() {
             </View>
           </View>
 
-          {/* Staff note */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               Add Note
@@ -394,7 +391,6 @@ export default function UpdateReservationScreen() {
             </Text>
           </View>
 
-          {/* Update button */}
           <Pressable
             style={({ pressed }) => [
               styles.updateButton,
@@ -485,40 +481,29 @@ const styles = StyleSheet.create({
 
   resourceCard: {
     padding: 14,
-
     borderRadius: 10,
-
     backgroundColor: '#FFFFFF',
-
     flexDirection: 'row',
     alignItems: 'center',
-
     borderWidth: 1,
     borderColor: '#E5E7EB',
-
     shadowColor: '#000000',
     shadowOpacity: 0.06,
     shadowRadius: 4,
-
     shadowOffset: {
       width: 0,
       height: 2,
     },
-
     elevation: 2,
   },
 
   resourceIcon: {
     width: 48,
     height: 56,
-
     borderRadius: 6,
-
     backgroundColor: '#111827',
-
     alignItems: 'center',
     justifyContent: 'center',
-
     marginRight: 12,
   },
 
@@ -544,14 +529,10 @@ const styles = StyleSheet.create({
 
   resourceBadge: {
     marginTop: 7,
-
     alignSelf: 'flex-start',
-
     paddingHorizontal: 10,
     paddingVertical: 3,
-
     borderRadius: 4,
-
     backgroundColor: '#16A34A',
   },
 
@@ -567,19 +548,13 @@ const styles = StyleSheet.create({
 
   reservationInfo: {
     minHeight: 52,
-
     marginTop: 14,
-
     paddingHorizontal: 13,
     paddingVertical: 12,
-
     borderRadius: 8,
-
     backgroundColor: '#FFFFFF',
-
     borderWidth: 1,
     borderColor: '#E5E7EB',
-
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -608,31 +583,24 @@ const styles = StyleSheet.create({
 
   optionalText: {
     marginTop: 2,
-
     fontSize: 9,
     color: '#9CA3AF',
   },
 
   statusCard: {
     marginTop: 10,
-
     paddingHorizontal: 13,
     paddingVertical: 5,
-
     borderRadius: 9,
-
     backgroundColor: '#FFFFFF',
-
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
 
   statusOption: {
     minHeight: 45,
-
     flexDirection: 'row',
     alignItems: 'center',
-
     borderBottomWidth: 1,
     borderBottomColor: '#F0F2F5',
   },
@@ -640,15 +608,11 @@ const styles = StyleSheet.create({
   radioOuter: {
     width: 18,
     height: 18,
-
     borderRadius: 9,
-
     borderWidth: 2,
     borderColor: '#9CA3AF',
-
     alignItems: 'center',
     justifyContent: 'center',
-
     marginRight: 11,
   },
 
@@ -659,9 +623,7 @@ const styles = StyleSheet.create({
   radioInner: {
     width: 9,
     height: 9,
-
     borderRadius: 5,
-
     backgroundColor: '#08245B',
   },
 
@@ -677,45 +639,32 @@ const styles = StyleSheet.create({
 
   noteInput: {
     height: 105,
-
     marginTop: 8,
-
     paddingHorizontal: 12,
     paddingVertical: 11,
-
     borderRadius: 8,
-
     borderWidth: 1,
     borderColor: '#D1D5DB',
-
     backgroundColor: '#FFFFFF',
-
     fontSize: 12,
     color: '#111827',
   },
 
   characterCount: {
     marginTop: 4,
-
     textAlign: 'right',
-
     fontSize: 9,
     color: '#9CA3AF',
   },
 
   updateButton: {
     height: 47,
-
     marginTop: 22,
-
     borderRadius: 8,
-
     backgroundColor: '#08245B',
-
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-
     gap: 7,
   },
 
@@ -731,34 +680,27 @@ const styles = StyleSheet.create({
 
   notFound: {
     flex: 1,
-
     alignItems: 'center',
     justifyContent: 'center',
-
     paddingHorizontal: 20,
   },
 
   notFoundText: {
     marginTop: 10,
-
     fontSize: 14,
     color: '#6B7280',
   },
 
   backToQueueButton: {
     marginTop: 18,
-
     paddingHorizontal: 20,
     paddingVertical: 10,
-
     borderRadius: 7,
-
     backgroundColor: '#08245B',
   },
 
   backToQueueText: {
     color: '#FFFFFF',
-
     fontSize: 12,
     fontWeight: '700',
   },
