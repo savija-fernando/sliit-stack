@@ -95,6 +95,10 @@ export default function AppTabs() {
         name="study-rooms"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="admin-seat-studyroom"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
