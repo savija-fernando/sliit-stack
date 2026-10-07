@@ -60,19 +60,33 @@ export default function SeatRoomSelectionScreen() {
       <View style={styles.content}>
         {/* Page heading */}
         <View style={styles.headingContainer}>
-          <View style={styles.eyebrow}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
             <MaterialCommunityIcons
-              name="calendar-check-outline"
-              size={15}
-              color="#2563EB"
+              name="arrow-left"
+              size={23}
+              color="#1F2937"
             />
-            <Text style={styles.eyebrowText}>RESERVATIONS</Text>
-          </View>
+          </Pressable>
+          <View style={styles.headingText}>
+            <View style={styles.eyebrow}>
+              <MaterialCommunityIcons
+                name="calendar-check-outline"
+                size={15}
+                color="#2563EB"
+              />
+              <Text style={styles.eyebrowText}>RESERVATIONS</Text>
+            </View>
 
-          <Text style={styles.title}>Book a space</Text>
-          <Text style={styles.subtitle}>
-            Find the perfect space for your next study session.
-          </Text>
+            <Text style={styles.title}>Book a space</Text>
+            <Text style={styles.subtitle}>
+              Find the perfect space for your next study session.
+            </Text>
+          </View>
         </View>
 
         {/* Section heading */}
@@ -307,7 +321,23 @@ const styles = StyleSheet.create({
   },
 
   headingContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
     marginBottom: 32,
+  },
+
+  headingText: {
+    flex: 1,
+  },
+
+  backButton: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
   },
 
   eyebrow: {

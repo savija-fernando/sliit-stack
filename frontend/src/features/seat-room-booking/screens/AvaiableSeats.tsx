@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -16,6 +16,12 @@ const seatLabel = (seat: number) =>
 
 export default function AvailableSeats() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    date?: string;
+    time?: string;
+    duration?: string;
+    type?: string;
+  }>();
   const [selected, setSelected] = useState<number[]>([]);
 
   const toggleSeat = (seat: number) => {
@@ -128,8 +134,13 @@ export default function AvailableSeats() {
           disabled={!hasSelection}
           onPress={() =>
             router.push({
-              pathname: '/booking-confirmation',
-              params: { seats: selected.join(',') },
+              pathname: '/rules' as any,
+              params: {
+                date: params.date ?? '',
+                time: params.time ?? '',
+                duration: params.duration ?? '',
+                seats: selected.join(','),
+              },
             })
           }
           style={({ pressed }) => [

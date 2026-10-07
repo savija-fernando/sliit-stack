@@ -1,4 +1,3 @@
-
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
@@ -11,90 +10,195 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-
+import { Calendar, DateData } from 'react-native-calendars';
 import AppHeader from '@/components/AppHeader';
 
 const TIME_SLOTS = [
-  { label: '08:00 AM', period: 'Morning' },
-  { label: '09:00 AM', period: 'Morning' },
-  { label: '10:00 AM', period: 'Morning' },
-  { label: '11:00 AM', period: 'Morning' },
-  { label: '12:00 PM', period: 'Afternoon' },
-  { label: '01:00 PM', period: 'Afternoon' },
-  { label: '02:00 PM', period: 'Afternoon' },
-  { label: '03:00 PM', period: 'Afternoon' },
-  { label: '04:00 PM', period: 'Evening' },
-  { label: '05:00 PM', period: 'Evening' },
+  { label: '08:00 AM-10:00 AM' },
+  { label: '10:00 AM-12:00 PM' },
+  { label: '12:00 PM-02:00 PM' },
+  { label: '02:00 PM-04:00 PM' },
+  { label: '04:00 PM-06:00 PM' }
 ];
 
-const DURATIONS = ['1 hour', '2 hours', '3 hours', '4 hours'];
+/*
+ * Convert Date into YYYY-MM-DD
+ */
+function getDateString(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
 
-function getNextDates() {
-  const dates = [];
+/*
+ * Get today's date
+ */
+function getTodayString() {
+  return getDateString(new Date());
+}
 
-  for (let i = 0; i < 7; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() + i);
+/*
+ * Existing bookable date data
+ * DO NOT CHANGE
+ */
+function getBookableDates() {
+  const dates: string[] = [];
 
-    dates.push({
-      value: [
-        date.getFullYear(),
-        String(date.getMonth() + 1).padStart(2, '0'),
-        String(date.getDate()).padStart(2, '0'),
-      ].join('-'),
-      day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-      number: date.getDate(),
-      month: date.toLocaleDateString('en-US', { month: 'short' }),
-    });
-  }
+  const availableDayOffsets = [1, 2, 4, 5, 7, 8, 10, 12, 14];
+
+  const today = new Date();
+
+  availableDayOffsets.forEach((offset) => {
+    const date = new Date(today);
+
+    date.setDate(today.getDate() + offset);
+
+    dates.push(getDateString(date));
+  });
 
   return dates;
 }
 
 export default function DateTimeSelectionScreen() {
   const router = useRouter();
+
   const params = useLocalSearchParams<{ type?: string }>();
 
-  const dates = getNextDates();
+  /*
+   * Date
+   */
+  const today = getTodayString();
 
-  const [selectedDate, setSelectedDate] = useState(dates[0].value);
+  const bookableDates = getBookableDates();
+
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  /*
+   * Time
+   */
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedDuration, setSelectedDuration] = useState('2 hours');
-  const [selectedPeriod, setSelectedPeriod] = useState('All');
 
-  const filteredTimes = TIME_SLOTS.filter(
-    (slot) =>
-      selectedPeriod === 'All' || slot.period === selectedPeriod,
-  );
-
+  /*
+   * Booking type
+   * We keep this because the next screen depends on it.
+   */
   const bookingType = params.type === 'room' ? 'Room' : 'Seat';
 
-  const handleFilter = () => {
-    if (!selectedTime) {
+  /*
+   * Calendar marked dates
+   */
+  const markedDates: {
+    [key: string]: {
+      disabled?: boolean;
+      disableTouchEvent?: boolean;
+      marked?: boolean;
+      dotColor?: string;
+      selected?: boolean;
+      selectedColor?: string;
+      selectedTextColor?: string;
+    };
+  } = {};
+
+  /*
+   * Disable today
+   */
+  markedDates[today] = {
+    disabled: true,
+    disableTouchEvent: true,
+  };
+
+  /*
+   * Mark available dates
+   */
+  bookableDates.forEach((date) => {
+    markedDates[date] = {
+      marked: true,
+      dotColor: '#2563EB',
+      disabled: false,
+    };
+  });
+
+  /*
+   * Highlight selected date
+   */
+  if (selectedDate) {
+    markedDates[selectedDate] = {
+      ...markedDates[selectedDate],
+      selected: true,
+      selectedColor: '#2563EB',
+      selectedTextColor: '#FFFFFF',
+    };
+  }
+
+  /*
+   * When user selects a date
+   */
+  const handleDateSelect = (day: DateData) => {
+    if (!bookableDates.includes(day.dateString)) {
       Alert.alert(
-        'Select a time',
-        'Please choose a starting time for your booking.',
+        'Date unavailable',
+        'Please select one of the available dates.',
       );
+
       return;
     }
 
+    setSelectedDate(day.dateString);
+  };
+
+  /*
+   * Continue button
+   */
+  const handleContinue = () => {
+    if (!selectedDate) {
+      Alert.alert(
+        'Select a time',
+        'Please select a date from the calendar.',
+      );
+
+      return;
+    }
+
+    if (!selectedTime) {
+      Alert.alert(
+        'Select a time',
+        'Please select a time.',
+      );
+
+      return;
+    }
+
+    /*
+     * Keep the same data being sent to the next screen.
+     */
     const routeParams = {
       date: selectedDate,
       time: selectedTime,
-      duration: selectedDuration,
     };
 
+    /*
+     * ROOM
+     */
     if (params.type === 'room') {
       router.push({
         pathname: '/study-rooms',
         params: routeParams,
       });
+
       return;
     }
 
+    /*
+     * SEAT
+     */
     router.push({
       pathname: '/available-seats',
-      params: { ...routeParams, type: 'seat' },
+      params: {
+        ...routeParams,
+        type: 'seat',
+      },
     });
   };
 
@@ -106,299 +210,171 @@ export default function DateTimeSelectionScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Header */}
-        <View style={styles.heading}>
-          <View style={styles.eyebrow}>
-            <MaterialCommunityIcons
-              name="calendar-clock-outline"
-              size={15}
-              color="#2563EB"
-            />
-            <Text style={styles.eyebrowText}>BOOKING PREFERENCES</Text>
-          </View>
+        {/* Back + Header */}
 
-          <Text style={styles.title}>Date & Time</Text>
-          <Text style={styles.subtitle}>
-            Find the right time for your next study session.
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={23}
+              color="#1F2937"
+            />
+          </Pressable>
+
+          <View style={styles.headerText}>
+            <Text style={styles.title}>Select Date & Time</Text>
+
+            <Text style={styles.subtitle}>
+              Choose when you want to book your {bookingType.toLowerCase()}.
+            </Text>
+          </View>
+        </View>
+
+        {/* Date */}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Select a date
           </Text>
-        </View>
 
-        {/* Selected space */}
-        <View style={styles.spaceBanner}>
-          <View style={styles.spaceIcon}>
-            <MaterialCommunityIcons
-              name={
-                bookingType === 'Seat'
-                  ? 'seat-outline'
-                  : 'office-building-outline'
-              }
-              size={24}
-              color="#2563EB"
+          <Text style={styles.sectionSubtitle}>
+            Choose an available date from the calendar.
+          </Text>
+
+          <View style={styles.calendarCard}>
+            <Calendar
+              minDate={today}
+              current={selectedDate || bookableDates[0] || today}
+              onDayPress={handleDateSelect}
+              markedDates={markedDates}
+              enableSwipeMonths={true}
+              firstDay={1}
+              theme={{
+                backgroundColor: '#FFFFFF',
+                calendarBackground: '#FFFFFF',
+
+                textSectionTitleColor: '#64748B',
+
+                selectedDayBackgroundColor: '#2563EB',
+                selectedDayTextColor: '#FFFFFF',
+
+                todayTextColor: '#2563EB',
+
+                dayTextColor: '#0F172A',
+                textDisabledColor: '#CBD5E1',
+
+                monthTextColor: '#0F172A',
+
+                arrowColor: '#2563EB',
+
+                textDayFontWeight: '600',
+                textMonthFontWeight: '800',
+                textDayHeaderFontWeight: '700',
+
+                textDayFontSize: 14,
+                textMonthFontSize: 17,
+                textDayHeaderFontSize: 11,
+              }}
             />
           </View>
-
-          <View style={{ flex: 1 }}>
-            <Text style={styles.spaceLabel}>BOOKING TYPE</Text>
-            <Text style={styles.spaceValue}>{bookingType} booking</Text>
-          </View>
-
-          <View style={styles.stepBadge}>
-            <Text style={styles.stepBadgeText}>STEP 2 OF 3</Text>
-          </View>
         </View>
 
-        {/* Date selection */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>Choose a date</Text>
-            <Text style={styles.sectionSubtitle}>
-              Select your preferred day
-            </Text>
+        {/* Selected Date */}
+
+        {selectedDate && (
+          <View style={styles.selectedBox}>
+            <MaterialCommunityIcons
+              name="calendar-check"
+              size={22}
+              color="#2563EB"
+            />
+
+            <View>
+              <Text style={styles.selectedLabel}>
+                SELECTED DATE
+              </Text>
+
+              <Text style={styles.selectedValue}>
+                {selectedDate}
+              </Text>
+            </View>
           </View>
+        )}
 
-          <MaterialCommunityIcons
-            name="calendar-month-outline"
-            size={23}
-            color="#64748B"
-          />
-        </View>
+        {/* Time */}
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.dateList}
-        >
-          {dates.map((date) => {
-            const selected = selectedDate === date.value;
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Select a time
+          </Text>
 
-            return (
-              <Pressable
-                key={date.value}
-                onPress={() => setSelectedDate(date.value)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                style={[
-                  styles.dateCard,
-                  selected && styles.dateCardSelected,
-                ]}
-              >
-                <Text
+          <Text style={styles.sectionSubtitle}>
+            Choose your preferred starting time.
+          </Text>
+
+          <View style={styles.timeGrid}>
+            {TIME_SLOTS.map((slot) => {
+              const selected = selectedTime === slot.label;
+
+              return (
+                <Pressable
+                  key={slot.label}
+                  onPress={() => setSelectedTime(slot.label)}
                   style={[
-                    styles.dateDay,
-                    selected && styles.selectedText,
+                    styles.timeButton,
+                    selected && styles.timeButtonSelected,
                   ]}
                 >
-                  {date.day}
-                </Text>
-
-                <Text
-                  style={[
-                    styles.dateNumber,
-                    selected && styles.selectedText,
-                  ]}
-                >
-                  {date.number}
-                </Text>
-
-                <Text
-                  style={[
-                    styles.dateMonth,
-                    selected && styles.selectedText,
-                  ]}
-                >
-                  {date.month}
-                </Text>
-
-                {selected && (
-                  <View style={styles.dateIndicator} />
-                )}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {/* Time selection */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>Choose a time</Text>
-            <Text style={styles.sectionSubtitle}>
-              Select your starting time
-            </Text>
-          </View>
-
-          <MaterialCommunityIcons
-            name="clock-time-four-outline"
-            size={23}
-            color="#64748B"
-          />
-        </View>
-
-        {/* Time period filters */}
-        <View style={styles.periodRow}>
-          {['All', 'Morning', 'Afternoon', 'Evening'].map((period) => {
-            const active = selectedPeriod === period;
-
-            return (
-              <Pressable
-                key={period}
-                onPress={() => {
-                  setSelectedPeriod(period);
-                  setSelectedTime(null);
-                }}
-                style={[
-                  styles.periodChip,
-                  active && styles.periodChipActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.periodText,
-                    active && styles.periodTextActive,
-                  ]}
-                >
-                  {period}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* Time slot grid */}
-        <View style={styles.timeGrid}>
-          {filteredTimes.map((slot) => {
-            const selected = selectedTime === slot.label;
-
-            return (
-              <Pressable
-                key={slot.label}
-                onPress={() => setSelectedTime(slot.label)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                style={[
-                  styles.timeSlot,
-                  selected && styles.timeSlotSelected,
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="clock-outline"
-                  size={16}
-                  color={selected ? '#2563EB' : '#64748B'}
-                />
-
-                <Text
-                  style={[
-                    styles.timeText,
-                    selected && styles.timeTextSelected,
-                  ]}
-                >
-                  {slot.label}
-                </Text>
-
-                {selected && (
                   <MaterialCommunityIcons
-                    name="check-circle"
-                    size={16}
-                    color="#2563EB"
+                    name="clock-outline"
+                    size={18}
+                    color={selected ? '#2563EB' : '#64748B'}
                   />
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
 
-        {/* Duration */}
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text style={styles.sectionTitle}>Booking duration</Text>
-            <Text style={styles.sectionSubtitle}>
-              How long do you need the space?
-            </Text>
-          </View>
+                  <Text
+                    style={[
+                      styles.timeText,
+                      selected && styles.timeTextSelected,
+                    ]}
+                  >
+                    {slot.label}
+                  </Text>
 
-          <MaterialCommunityIcons
-            name="timer-outline"
-            size={23}
-            color="#64748B"
-          />
-        </View>
-
-        <View style={styles.durationRow}>
-          {DURATIONS.map((duration) => {
-            const selected = selectedDuration === duration;
-
-            return (
-              <Pressable
-                key={duration}
-                onPress={() => setSelectedDuration(duration)}
-                style={[
-                  styles.durationChip,
-                  selected && styles.durationChipSelected,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.durationText,
-                    selected && styles.durationTextSelected,
-                  ]}
-                >
-                  {duration}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {/* Booking summary */}
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryIcon}>
-            <MaterialCommunityIcons
-              name="clipboard-check-outline"
-              size={24}
-              color="#2563EB"
-            />
-          </View>
-
-          <View style={styles.summaryContent}>
-            <Text style={styles.summaryTitle}>Your booking preferences</Text>
-
-            <Text style={styles.summaryDetail}>
-              {dates.find((date) => date.value === selectedDate)?.day},{' '}
-              {dates.find((date) => date.value === selectedDate)?.number}{' '}
-              {dates.find((date) => date.value === selectedDate)?.month}
-            </Text>
-
-            <Text style={styles.summaryDetail}>
-              {selectedTime ?? 'No time selected'} · {selectedDuration}
-            </Text>
+                  {selected && (
+                    <MaterialCommunityIcons
+                      name="check-circle"
+                      size={17}
+                      color="#2563EB"
+                    />
+                  )}
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
-        {/* Continue button */}
+        {/* Continue */}
+
         <Pressable
-          onPress={handleFilter}
+          onPress={handleContinue}
           style={({ pressed }) => [
-            styles.filterButton,
-            pressed && styles.filterButtonPressed,
+            styles.continueButton,
+            pressed && styles.continueButtonPressed,
           ]}
         >
-          <MaterialCommunityIcons
-            name="filter-variant"
-            size={21}
-            color="#FFFFFF"
-          />
-          <Text style={styles.filterButtonText}>
-            Find Available {bookingType === 'Seat' ? 'Seats' : 'Rooms'}
+          <Text style={styles.continueText}>
+            Continue
           </Text>
+
           <MaterialCommunityIcons
             name="arrow-right"
             size={21}
             color="#FFFFFF"
           />
         </Pressable>
-
-        <Text style={styles.footerText}>
-          Availability will depend on the selected date and time.
-        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -412,37 +388,37 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 25,
-    paddingBottom: 30,
+    paddingTop: 24,
+    paddingBottom: 35,
   },
 
-  heading: {
-    marginBottom: 23,
-  },
+  /*
+   * Header
+   */
 
-  eyebrow: {
+  header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 7,
-    backgroundColor: '#EFF6FF',
-    borderRadius: 20,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    marginBottom: 10,
+    alignItems: 'flex-start',
+    marginBottom: 28,
   },
 
-  eyebrowText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    color: '#2563EB',
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+
+  headerText: {
+    flex: 1,
   },
 
   title: {
-    fontSize: 29,
+    fontSize: 27,
     fontWeight: '800',
-    letterSpacing: -0.7,
     color: '#0F172A',
   },
 
@@ -450,66 +426,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     color: '#64748B',
-    marginTop: 7,
+    marginTop: 6,
   },
 
-  spaceBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderRadius: 17,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 27,
-    gap: 11,
-  },
+  /*
+   * Sections
+   */
 
-  spaceIcon: {
-    width: 45,
-    height: 45,
-    borderRadius: 14,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  spaceLabel: {
-    fontSize: 9,
-    letterSpacing: 0.9,
-    fontWeight: '800',
-    color: '#94A3B8',
-  },
-
-  spaceValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 4,
-  },
-
-  stepBadge: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-
-  stepBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#64748B',
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
+  section: {
+    marginBottom: 20,
   },
 
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
   },
@@ -517,125 +446,91 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 12,
     color: '#94A3B8',
-    marginTop: 4,
-  },
-
-  dateList: {
-    gap: 10,
-    paddingTop: 2,
-    paddingBottom: 5,
-  },
-
-  dateCard: {
-    width: 61,
-    height: 94,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  dateCardSelected: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-
-  dateDay: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-
-  dateNumber: {
-    fontSize: 23,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginVertical: 3,
-  },
-
-  dateMonth: {
-    fontSize: 10,
-    color: '#64748B',
-  },
-
-  selectedText: {
-    color: '#FFFFFF',
-  },
-
-  dateIndicator: {
-    position: 'absolute',
-    bottom: 5,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#FFFFFF',
-  },
-
-  periodRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
+    marginTop: 5,
     marginBottom: 13,
   },
 
-  periodChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 20,
+  /*
+   * Calendar
+   */
+
+  calendarCard: {
     backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    overflow: 'hidden',
   },
 
-  periodChipActive: {
+  /*
+   * Selected date
+   */
+
+  selectedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+
     backgroundColor: '#EFF6FF',
-    borderColor: '#93C5FD',
+
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+
+    borderRadius: 14,
+
+    padding: 13,
+
+    marginBottom: 25,
   },
 
-  periodText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-
-  periodTextActive: {
-    color: '#2563EB',
+  selectedLabel: {
+    fontSize: 9,
     fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.7,
   },
+
+  selectedValue: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 3,
+  },
+
+  /*
+   * Time
+   */
 
   timeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 9,
-    marginBottom: 27,
+    gap: 10,
   },
 
-  timeSlot: {
-    width: '48%',
-    minHeight: 46,
-    flexGrow: 1,
-    flexBasis: '45%',
+  timeButton: {
+    width: '47%',
+
+    minHeight: 48,
+
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 8,
-    borderRadius: 12,
+
+    gap: 7,
+
+    backgroundColor: '#FFFFFF',
+
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+
+    borderRadius: 12,
+
+    paddingHorizontal: 8,
   },
 
-  timeSlotSelected: {
-    borderColor: '#60A5FA',
+  timeButtonSelected: {
     backgroundColor: '#EFF6FF',
+    borderColor: '#60A5FA',
   },
 
   timeText: {
@@ -649,109 +544,34 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  durationRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 9,
-    marginBottom: 25,
-  },
+  /*
+   * Continue button
+   */
 
-  durationChip: {
-    paddingHorizontal: 15,
-    paddingVertical: 11,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-
-  durationChipSelected: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#60A5FA',
-  },
-
-  durationText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
-  },
-
-  durationTextSelected: {
-    color: '#2563EB',
-    fontWeight: '800',
-  },
-
-  summaryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 13,
-    padding: 15,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 17,
-    marginBottom: 18,
-  },
-
-  summaryIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EFF6FF',
-  },
-
-  summaryContent: {
-    flex: 1,
-  },
-
-  summaryTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 5,
-  },
-
-  summaryDetail: {
-    fontSize: 12,
-    lineHeight: 19,
-    color: '#64748B',
-  },
-
-  filterButton: {
+  continueButton: {
     minHeight: 54,
+
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    backgroundColor: '#2563EB',
-    borderRadius: 16,
-    paddingHorizontal: 15,
 
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
-    shadowRadius: 9,
-    elevation: 4,
+    gap: 10,
+
+    backgroundColor: '#2563EB',
+
+    borderRadius: 15,
+
+    marginTop: 5,
   },
 
-  filterButtonPressed: {
+  continueButtonPressed: {
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
 
-  filterButtonText: {
+  continueText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
-  },
-
-  footerText: {
-    textAlign: 'center',
-    marginTop: 13,
-    fontSize: 10,
-    color: '#94A3B8',
-    lineHeight: 16,
   },
 });
