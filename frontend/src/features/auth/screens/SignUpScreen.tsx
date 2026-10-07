@@ -40,7 +40,8 @@ export default function SignUpScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.container}>
           <Image
             source={require('@/assets/images/auth/login-top-banner.png')}
@@ -65,12 +66,14 @@ export default function SignUpScreen() {
                   styles.roleButton,
                   isStudent && styles.activeRoleButton,
                 ]}
-                onPress={() => changeRole('student')}>
+                onPress={() => changeRole('student')}
+              >
                 <Text
                   style={[
                     styles.roleText,
                     isStudent && styles.activeRoleText,
-                  ]}>
+                  ]}
+                >
                   Student
                 </Text>
               </Pressable>
@@ -80,18 +83,22 @@ export default function SignUpScreen() {
                   styles.roleButton,
                   !isStudent && styles.activeRoleButton,
                 ]}
-                onPress={() => changeRole('staff')}>
+                onPress={() => changeRole('staff')}
+              >
                 <Text
                   style={[
                     styles.roleText,
                     !isStudent && styles.activeRoleText,
-                  ]}>
+                  ]}
+                >
                   Staff
                 </Text>
               </Pressable>
             </View>
 
-            <Text style={styles.title}>Create Your Account</Text>
+            <Text style={styles.title}>
+              Create Your Account
+            </Text>
 
             <Text style={styles.subtitle}>
               {isStudent
@@ -99,7 +106,9 @@ export default function SignUpScreen() {
                 : 'Create your staff account'}
             </Text>
 
-            <Text style={styles.label}>Full Name</Text>
+            <Text style={styles.label}>
+              Full Name
+            </Text>
 
             <TextInput
               style={styles.input}
@@ -110,7 +119,9 @@ export default function SignUpScreen() {
             />
 
             <Text style={styles.label}>
-              {isStudent ? 'Student ID' : 'Staff ID'}
+              {isStudent
+                ? 'Student ID'
+                : 'Staff ID'}
             </Text>
 
             <TextInput
@@ -118,14 +129,18 @@ export default function SignUpScreen() {
               value={userId}
               onChangeText={setUserId}
               placeholder={
-                isStudent ? 'Enter Student ID' : 'Enter Staff ID'
+                isStudent
+                  ? 'Enter Student ID'
+                  : 'Enter Staff ID'
               }
               placeholderTextColor="#9A9A9A"
               autoCapitalize="characters"
             />
 
             <Text style={styles.label}>
-              {isStudent ? 'Student E-mail' : 'Staff E-mail'}
+              {isStudent
+                ? 'Student E-mail'
+                : 'Staff E-mail'}
             </Text>
 
             <TextInput
@@ -138,7 +153,9 @@ export default function SignUpScreen() {
               autoCapitalize="none"
             />
 
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>
+              Password
+            </Text>
 
             <TextInput
               style={styles.input}
@@ -153,7 +170,9 @@ export default function SignUpScreen() {
               Minimum 6 characters
             </Text>
 
-            <Text style={styles.label}>Confirm Password</Text>
+            <Text style={styles.label}>
+              Confirm Password
+            </Text>
 
             <TextInput
               style={styles.input}
@@ -165,22 +184,8 @@ export default function SignUpScreen() {
             />
 
             <Pressable style={styles.signupButton}>
-              <Text style={styles.signupButtonText}>Sign Up</Text>
-            </Pressable>
-
-            <View style={styles.dividerContainer}>
-              <View style={styles.divider} />
-
-              <Text style={styles.orText}>Or</Text>
-
-              <View style={styles.divider} />
-            </View>
-
-            <Pressable style={styles.googleButton}>
-              <Text style={styles.googleLogo}>G</Text>
-
-              <Text style={styles.googleButtonText}>
-                Continue with Google
+              <Text style={styles.signupButtonText}>
+                Sign Up
               </Text>
             </Pressable>
 
@@ -189,8 +194,12 @@ export default function SignUpScreen() {
                 Already have an account?{' '}
               </Text>
 
-              <Pressable onPress={() => router.push('/login')}>
-                <Text style={styles.loginLink}>Login</Text>
+              <Pressable
+                onPress={() => router.push('/login')}
+              >
+                <Text style={styles.loginLink}>
+                  Login
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -337,46 +346,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-  },
-
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 18,
-  },
-
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#7B7B7B',
-  },
-
-  orText: {
-    paddingHorizontal: 10,
-    color: '#555555',
-    fontSize: 13,
-  },
-
-  googleButton: {
-    height: 44,
-    borderRadius: 3,
-    backgroundColor: '#F0F0F0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  googleLogo: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#4285F4',
-    marginRight: 11,
-  },
-
-  googleButtonText: {
-    color: '#222222',
-    fontSize: 14,
-    fontWeight: '600',
   },
 
   loginContainer: {

@@ -14,21 +14,28 @@ import {
 type UserRole = 'student' | 'staff';
 
 export default function LoginScreen() {
-    const router = useRouter();
+  const router = useRouter();
+
   const [role, setRole] = useState<UserRole>('student');
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const isStudent = role === 'student';
+
+  const changeRole = (newRole: UserRole) => {
+    setRole(newRole);
+    setEmail('');
+    setPassword('');
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.container}>
-          {/* Top Figma banner */}
           <Image
             source={require('@/assets/images/auth/login-top-banner.png')}
             style={styles.topBanner}
@@ -36,7 +43,6 @@ export default function LoginScreen() {
           />
 
           <View style={styles.card}>
-            {/* Logo */}
             <View style={styles.logoContainer}>
               <Image
                 source={require('@/assets/images/auth/sliitstack-logo.png')}
@@ -44,26 +50,25 @@ export default function LoginScreen() {
                 resizeMode="contain"
               />
 
-              <Text style={styles.logoName}>SLIITStack</Text>
+              <Text style={styles.logoName}>
+                SLIITStack
+              </Text>
             </View>
 
-            {/* Student / Staff selector */}
             <View style={styles.roleSelector}>
               <Pressable
                 style={[
                   styles.roleButton,
                   isStudent && styles.activeRoleButton,
                 ]}
-                onPress={() => {
-                  setRole('student');
-                  setIdentifier('');
-                  setPassword('');
-                }}>
+                onPress={() => changeRole('student')}
+              >
                 <Text
                   style={[
                     styles.roleText,
                     isStudent && styles.activeRoleText,
-                  ]}>
+                  ]}
+                >
                   Student
                 </Text>
               </Pressable>
@@ -73,41 +78,51 @@ export default function LoginScreen() {
                   styles.roleButton,
                   !isStudent && styles.activeRoleButton,
                 ]}
-                onPress={() => {
-                  setRole('staff');
-                  setIdentifier('');
-                  setPassword('');
-                }}>
+                onPress={() => changeRole('staff')}
+              >
                 <Text
                   style={[
                     styles.roleText,
                     !isStudent && styles.activeRoleText,
-                  ]}>
+                  ]}
+                >
                   Staff
                 </Text>
               </Pressable>
             </View>
 
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Login to continue</Text>
+            <Text style={styles.title}>
+              Welcome Back
+            </Text>
+
+            <Text style={styles.subtitle}>
+              Login to continue
+            </Text>
 
             <Text style={styles.label}>
-              {isStudent ? 'E-mail' : 'Staff ID'}
+              {isStudent
+                ? 'Student E-mail'
+                : 'Staff E-mail'}
             </Text>
 
             <TextInput
               style={styles.input}
-              value={identifier}
-              onChangeText={setIdentifier}
+              value={email}
+              onChangeText={setEmail}
               placeholder={
-                isStudent ? 'Enter your e-mail' : 'Enter Staff ID'
+                isStudent
+                  ? 'Enter Student E-mail'
+                  : 'Enter Staff E-mail'
               }
               placeholderTextColor="#9A9A9A"
               autoCapitalize="none"
-              keyboardType={isStudent ? 'email-address' : 'default'}
+              autoCorrect={false}
+              keyboardType="email-address"
             />
 
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>
+              Password
+            </Text>
 
             <TextInput
               style={styles.input}
@@ -125,22 +140,8 @@ export default function LoginScreen() {
             </Pressable>
 
             <Pressable style={styles.loginButton}>
-              <Text style={styles.loginButtonText}>Login</Text>
-            </Pressable>
-
-            <View style={styles.dividerContainer}>
-              <View style={styles.divider} />
-
-              <Text style={styles.orText}>Or</Text>
-
-              <View style={styles.divider} />
-            </View>
-
-            <Pressable style={styles.googleButton}>
-              <Text style={styles.googleLogo}>G</Text>
-
-              <Text style={styles.googleButtonText}>
-                Continue with Google
+              <Text style={styles.loginButtonText}>
+                Login
               </Text>
             </Pressable>
 
@@ -149,13 +150,18 @@ export default function LoginScreen() {
                 Don&apos;t have an account?{' '}
               </Text>
 
-              <Pressable onPress={() => router.push('/signup' as Href)}>
-                <Text style={styles.signupLink}>Sign Up</Text>
+              <Pressable
+                onPress={() =>
+                  router.push('/signup' as Href)
+                }
+              >
+                <Text style={styles.signupLink}>
+                  Sign Up
+                </Text>
               </Pressable>
             </View>
           </View>
 
-          {/* Bottom Figma banner */}
           <Image
             source={require('@/assets/images/auth/login-bottom-banner.png')}
             style={styles.bottomBanner}
@@ -298,46 +304,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-  },
-
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 18,
-  },
-
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#7B7B7B',
-  },
-
-  orText: {
-    paddingHorizontal: 10,
-    color: '#555555',
-    fontSize: 13,
-  },
-
-  googleButton: {
-    height: 44,
-    borderRadius: 3,
-    backgroundColor: '#F0F0F0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  googleLogo: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#4285F4',
-    marginRight: 11,
-  },
-
-  googleButtonText: {
-    color: '#222222',
-    fontSize: 14,
-    fontWeight: '600',
   },
 
   signupContainer: {
