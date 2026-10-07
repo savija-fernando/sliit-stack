@@ -71,7 +71,7 @@ function mapRoom(room: DatabaseRow): StudyRoom {
 
   if ((typeof id !== 'string' && typeof id !== 'number') || !name) {
     throw new Error(
-      'A row in studyroom is missing its id or name column.',
+      'A row in studyrooms is missing its id or name column.',
     );
   }
 
@@ -100,10 +100,10 @@ function isWithinAvailability(
     availableUntil == null ? null : toMinutes(availableUntil);
 
   if (availableFrom != null && start === null) {
-    throw new Error('A studyroom row has an invalid available_from time.');
+    throw new Error('A studyrooms row has an invalid available_from time.');
   }
   if (availableUntil != null && end === null) {
-    throw new Error('A studyroom row has an invalid available_until time.');
+    throw new Error('A studyrooms row has an invalid available_until time.');
   }
 
   return (
@@ -124,7 +124,7 @@ export async function getAvailableStudyRooms({
   const requested = parseRequestedTime(time, duration);
 
   const [roomsResult, bookingsResult] = await Promise.all([
-    supabase.from('studyroom').select('*'),
+    supabase.from('studyrooms').select('*'),
     supabase
       .from('studyroombookings')
       .select('*')

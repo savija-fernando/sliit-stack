@@ -169,6 +169,22 @@ export default function AdminSeatStudyRoomScreen() {
           </View>
         </View>
 
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push('/admin-resources')}
+          style={({ pressed }) => [
+            styles.manageButton,
+            pressed && styles.submitButtonPressed,
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="view-list-outline"
+            size={19}
+            color="#2563EB"
+          />
+          <Text style={styles.manageButtonText}>Manage existing resources</Text>
+        </Pressable>
+
         <View style={styles.formCard}>
           <Text style={styles.sectionTitle}>Resource type</Text>
           <View style={styles.typeSelector}>
@@ -468,6 +484,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 14,
     elevation: 2,
+  },
+  manageButton: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+  },
+  manageButtonText: {
+    color: '#1D4ED8',
+    fontSize: 14,
+    fontWeight: '700',
   },
   sectionTitle: {
     marginBottom: 14,
