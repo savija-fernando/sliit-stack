@@ -216,6 +216,7 @@ export default function BookReservationQueueScreen() {
       <View style={styles.phoneContainer}>
         <AppHeader
           rightAction="profile"
+          sideMenu="staff"
         />
 
         <View style={styles.titleRow}>

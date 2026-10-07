@@ -41,7 +41,10 @@ export default function StaffDashboardScreen() {
     <SafeAreaView style={styles.page}>
       <View style={styles.phoneContainer}>
         {/* Header */}
-        <AppHeader rightAction="profile" />
+        <AppHeader
+          rightAction="profile"
+          sideMenu="staff"
+        />
 
         {/* Main dashboard */}
         <ScrollView

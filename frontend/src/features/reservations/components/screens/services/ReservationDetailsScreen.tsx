@@ -75,7 +75,10 @@ export default function ReservationDetailsScreen() {
     return (
       <SafeAreaView style={styles.page}>
         <View style={styles.phoneContainer}>
-          <AppHeader rightAction="profile" />
+          <AppHeader
+            rightAction="profile"
+            sideMenu="staff"
+          />
 
           <View style={styles.notFound}>
             <Ionicons
