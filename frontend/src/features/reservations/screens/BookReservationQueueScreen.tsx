@@ -31,19 +31,18 @@ import AppHeader from '@/components/AppHeader';
 import StaffBottomNav from '@/features/dashboard/components/StaffBottomNav';
 
 import ReservationQueueCard from '@/features/reservations/components/ReservationQueueCard';
-
-import ReservationStatusTabs from './ReservationStatusTabs';
-import ReservationTypeTabs from './ReservationTypeTabs';
+import ReservationStatusTabs from '@/features/reservations/components/ReservationStatusTabs';
+import ReservationTypeTabs from '@/features/reservations/components/ReservationTypeTabs';
 
 import {
   getReservations,
-} from './reservationStore';
+} from '@/features/reservations/services/reservationStore';
 
 import type {
   ReservationKind,
   ReservationRecord,
   ReservationStatus,
-} from '../../../types/reservation';
+} from '@/features/reservations/types/reservation';
 
 type QueueStatus =
   | 'pending'
@@ -216,7 +215,6 @@ export default function BookReservationQueueScreen() {
       <View style={styles.phoneContainer}>
         <AppHeader
           rightAction="profile"
-          sideMenu="staff"
         />
 
         <View style={styles.titleRow}>
@@ -268,7 +266,6 @@ export default function BookReservationQueueScreen() {
                   ({
                     outlineStyle:
                       'none',
-
                     outlineWidth: 0,
                   } as any),
               ]}
@@ -314,7 +311,6 @@ export default function BookReservationQueueScreen() {
           </Pressable>
         </View>
 
-        {/* Books / Seats */}
         <ReservationTypeTabs
           activeType={activeType}
           onChange={
@@ -322,7 +318,6 @@ export default function BookReservationQueueScreen() {
           }
         />
 
-        {/* Dynamic status tabs */}
         <View style={styles.tabsWrapper}>
           <ReservationStatusTabs
             activeStatus={
@@ -412,9 +407,7 @@ function getReservationType(
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-
     backgroundColor: '#E5E7EB',
-
     alignItems: 'center',
   },
 
@@ -500,8 +493,7 @@ const styles = StyleSheet.create({
 
     color: '#111111',
 
-    backgroundColor:
-      'transparent',
+    backgroundColor: 'transparent',
   },
 
   clearButton: {
@@ -518,8 +510,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 6,
 
-    backgroundColor:
-      '#08245B',
+    backgroundColor: '#08245B',
 
     alignItems: 'center',
     justifyContent: 'center',

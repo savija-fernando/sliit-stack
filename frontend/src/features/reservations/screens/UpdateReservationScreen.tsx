@@ -28,7 +28,7 @@ import StaffBottomNav from '@/features/dashboard/components/StaffBottomNav';
 import {
   getReservationById,
   updateReservation,
-} from './reservationStore';
+} from '@/features/reservations/services/reservationStore';
 
 type ReservationUpdateStatus =
   | 'approved'
@@ -75,7 +75,9 @@ export default function UpdateReservationScreen() {
     return (
       <SafeAreaView style={styles.page}>
         <View style={styles.phoneContainer}>
-          <AppHeader rightAction="profile" />
+          <AppHeader
+            rightAction="profile"
+          />
 
           <View style={styles.notFound}>
             <Ionicons
@@ -87,6 +89,23 @@ export default function UpdateReservationScreen() {
             <Text style={styles.notFoundText}>
               Reservation not found.
             </Text>
+
+            <Pressable
+              style={styles.backToQueueButton}
+              onPress={() =>
+                router.replace(
+                  '/staff-queues' as Href,
+                )
+              }
+            >
+              <Text
+                style={
+                  styles.backToQueueText
+                }
+              >
+                Back to Queue
+              </Text>
+            </Pressable>
           </View>
         </View>
       </SafeAreaView>
@@ -104,17 +123,12 @@ export default function UpdateReservationScreen() {
       label: 'Approved',
       value: 'approved',
     },
-
     {
       label: 'Rejected',
       value: 'rejected',
     },
   ];
 
-  /*
-   * Returned only makes sense
-   * for book reservations.
-   */
   if (isBook) {
     statusOptions.push({
       label: 'Returned',
@@ -122,10 +136,6 @@ export default function UpdateReservationScreen() {
     });
   }
 
-  /*
-   * Both books and seats can
-   * eventually become expired.
-   */
   statusOptions.push({
     label: 'Expired',
     value: 'expired',
@@ -160,6 +170,7 @@ export default function UpdateReservationScreen() {
           }
           keyboardShouldPersistTaps="handled"
         >
+          {/* Page title */}
           <View style={styles.titleRow}>
             <Pressable
               onPress={() =>
@@ -168,6 +179,8 @@ export default function UpdateReservationScreen() {
                 )
               }
               style={styles.backButton}
+              accessibilityRole="button"
+              accessibilityLabel="Back to reservation details"
             >
               <Ionicons
                 name="arrow-back-circle"
@@ -185,11 +198,11 @@ export default function UpdateReservationScreen() {
             </Text>
           </View>
 
+          {/* Book / Seat information */}
           <View style={styles.resourceCard}>
             <View
               style={[
                 styles.resourceIcon,
-
                 !isBook &&
                   styles.seatIcon,
               ]}
@@ -209,32 +222,60 @@ export default function UpdateReservationScreen() {
               )}
             </View>
 
-            <View style={styles.resourceInformation}>
-              <Text style={styles.resourceTitle}>
+            <View
+              style={
+                styles.resourceInformation
+              }
+            >
+              <Text
+                style={
+                  styles.resourceTitle
+                }
+              >
                 {reservation.title}
               </Text>
 
               {isBook ? (
                 <>
-                  <Text style={styles.resourceMeta}>
+                  <Text
+                    style={
+                      styles.resourceMeta
+                    }
+                  >
                     By {reservation.author}
                   </Text>
 
-                  <Text style={styles.resourceMeta}>
+                  <Text
+                    style={
+                      styles.resourceMeta
+                    }
+                  >
                     Published on{' '}
-                    {reservation.published}
+                    {
+                      reservation.published
+                    }
                   </Text>
                 </>
               ) : (
                 <>
-                  <Text style={styles.resourceMeta}>
+                  <Text
+                    style={
+                      styles.resourceMeta
+                    }
+                  >
                     Location:{' '}
                     {reservation.author}
                   </Text>
 
-                  <Text style={styles.resourceMeta}>
+                  <Text
+                    style={
+                      styles.resourceMeta
+                    }
+                  >
                     Time Slot:{' '}
-                    {reservation.published}
+                    {
+                      reservation.published
+                    }
                   </Text>
                 </>
               )}
@@ -242,12 +283,15 @@ export default function UpdateReservationScreen() {
               <View
                 style={[
                   styles.resourceBadge,
-
                   !isBook &&
                     styles.seatBadge,
                 ]}
               >
-                <Text style={styles.resourceBadgeText}>
+                <Text
+                  style={
+                    styles.resourceBadgeText
+                  }
+                >
                   {isBook
                     ? 'Available'
                     : 'Seat Reservation'}
@@ -256,6 +300,7 @@ export default function UpdateReservationScreen() {
             </View>
           </View>
 
+          {/* Reservation ID */}
           <View style={styles.reservationInfo}>
             <Text style={styles.infoLabel}>
               Reservation ID
@@ -266,6 +311,7 @@ export default function UpdateReservationScreen() {
             </Text>
           </View>
 
+          {/* Status */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               Change Status
@@ -293,7 +339,6 @@ export default function UpdateReservationScreen() {
                       <View
                         style={[
                           styles.radioOuter,
-
                           isSelected &&
                             styles.radioOuterSelected,
                         ]}
@@ -310,7 +355,6 @@ export default function UpdateReservationScreen() {
                       <Text
                         style={[
                           styles.statusLabel,
-
                           isSelected &&
                             styles.statusLabelSelected,
                         ]}
@@ -324,6 +368,7 @@ export default function UpdateReservationScreen() {
             </View>
           </View>
 
+          {/* Staff note */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               Add Note
@@ -349,14 +394,16 @@ export default function UpdateReservationScreen() {
             </Text>
           </View>
 
+          {/* Update button */}
           <Pressable
             style={({ pressed }) => [
               styles.updateButton,
-
               pressed &&
                 styles.updateButtonPressed,
             ]}
             onPress={handleUpdate}
+            accessibilityRole="button"
+            accessibilityLabel="Update reservation"
           >
             <Ionicons
               name="checkmark-circle-outline"
@@ -364,7 +411,11 @@ export default function UpdateReservationScreen() {
               color="#FFFFFF"
             />
 
-            <Text style={styles.updateButtonText}>
+            <Text
+              style={
+                styles.updateButtonText
+              }
+            >
               Update Reservation
             </Text>
           </Pressable>
@@ -427,10 +478,8 @@ const styles = StyleSheet.create({
 
   pageTitle: {
     flex: 1,
-
     fontSize: 18,
     fontWeight: '800',
-
     color: '#111111',
   },
 
@@ -539,13 +588,11 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 11,
     fontWeight: '700',
-
     color: '#333333',
   },
 
   infoValue: {
     fontSize: 10,
-
     color: '#555555',
   },
 
@@ -556,7 +603,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '800',
-
     color: '#111827',
   },
 
@@ -564,7 +610,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
 
     fontSize: 9,
-
     color: '#9CA3AF',
   },
 
@@ -589,8 +634,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
 
     borderBottomWidth: 1,
-    borderBottomColor:
-      '#F0F2F5',
+    borderBottomColor: '#F0F2F5',
   },
 
   radioOuter: {
@@ -618,19 +662,16 @@ const styles = StyleSheet.create({
 
     borderRadius: 5,
 
-    backgroundColor:
-      '#08245B',
+    backgroundColor: '#08245B',
   },
 
   statusLabel: {
     fontSize: 12,
-
     color: '#4B5563',
   },
 
   statusLabelSelected: {
     fontWeight: '700',
-
     color: '#08245B',
   },
 
@@ -650,7 +691,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
 
     fontSize: 12,
-
     color: '#111827',
   },
 
@@ -660,7 +700,6 @@ const styles = StyleSheet.create({
     textAlign: 'right',
 
     fontSize: 9,
-
     color: '#9CA3AF',
   },
 
@@ -671,8 +710,7 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor:
-      '#08245B',
+    backgroundColor: '#08245B',
 
     flexDirection: 'row',
     alignItems: 'center',
@@ -688,7 +726,6 @@ const styles = StyleSheet.create({
   updateButtonText: {
     fontSize: 13,
     fontWeight: '700',
-
     color: '#FFFFFF',
   },
 
@@ -697,13 +734,32 @@ const styles = StyleSheet.create({
 
     alignItems: 'center',
     justifyContent: 'center',
+
+    paddingHorizontal: 20,
   },
 
   notFoundText: {
     marginTop: 10,
 
     fontSize: 14,
-
     color: '#6B7280',
+  },
+
+  backToQueueButton: {
+    marginTop: 18,
+
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+
+    borderRadius: 7,
+
+    backgroundColor: '#08245B',
+  },
+
+  backToQueueText: {
+    color: '#FFFFFF',
+
+    fontSize: 12,
+    fontWeight: '700',
   },
 });

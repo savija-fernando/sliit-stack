@@ -7,7 +7,7 @@ import {
 
 import type {
   ReservationKind,
-} from '../../../types/reservation';
+} from '@/features/reservations/types/reservation';
 
 type Props = {
   activeType: ReservationKind;
@@ -16,24 +16,24 @@ type Props = {
   ) => void;
 };
 
-const tabs: {
-  label: string;
-  value: ReservationKind;
-}[] = [
-  {
-    label: 'Books',
-    value: 'book',
-  },
-  {
-    label: 'Seats',
-    value: 'seat',
-  },
-];
-
 export default function ReservationTypeTabs({
   activeType,
   onChange,
 }: Props) {
+  const tabs: {
+    label: string;
+    value: ReservationKind;
+  }[] = [
+    {
+      label: 'Books',
+      value: 'book',
+    },
+    {
+      label: 'Seats',
+      value: 'seat',
+    },
+  ];
+
   return (
     <View style={styles.container}>
       {tabs.map((tab) => {
@@ -70,25 +70,23 @@ export default function ReservationTypeTabs({
 
 const styles = StyleSheet.create({
   container: {
+    flexDirection: 'row',
+
     marginTop: 14,
 
-    marginHorizontal: 15,
+    padding: 3,
 
-    padding: 4,
-
-    borderRadius: 8,
+    borderRadius: 7,
 
     backgroundColor: '#E5E7EB',
-
-    flexDirection: 'row',
   },
 
   tab: {
     flex: 1,
 
-    minHeight: 38,
+    minHeight: 36,
 
-    borderRadius: 6,
+    borderRadius: 5,
 
     alignItems: 'center',
     justifyContent: 'center',
@@ -99,13 +97,15 @@ const styles = StyleSheet.create({
   },
 
   tabText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '600',
 
     color: '#6B7280',
   },
 
   activeTabText: {
+    fontWeight: '700',
+
     color: '#FFFFFF',
   },
 });

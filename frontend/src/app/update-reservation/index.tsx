@@ -1,4 +1,4 @@
-import UpdateReservationScreen from '@/features/reservations/components/screens/services/UpdateReservationScreen';
+import UpdateReservationScreen from '@/features/reservations/screens/UpdateReservationScreen';
 
 export default function UpdateReservationRoute() {
   return <UpdateReservationScreen />;

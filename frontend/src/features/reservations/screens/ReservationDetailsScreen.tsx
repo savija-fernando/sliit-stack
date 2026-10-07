@@ -25,16 +25,17 @@ import {
 } from 'expo-router';
 
 import AppHeader from '@/components/AppHeader';
+
 import StaffBottomNav from '@/features/dashboard/components/StaffBottomNav';
 
 import {
   getReservationById,
-} from './reservationStore';
+} from '@/features/reservations/services/reservationStore';
 
 import type {
   ReservationRecord,
   ReservationStatus,
-} from '../../../types/reservation';
+} from '@/features/reservations/types/reservation';
 
 export default function ReservationDetailsScreen() {
   const router = useRouter();
@@ -77,7 +78,6 @@ export default function ReservationDetailsScreen() {
         <View style={styles.phoneContainer}>
           <AppHeader
             rightAction="profile"
-            sideMenu="staff"
           />
 
           <View style={styles.notFound}>
@@ -92,14 +92,20 @@ export default function ReservationDetailsScreen() {
             </Text>
 
             <Pressable
-              style={styles.backToQueueButton}
+              style={
+                styles.backToQueueButton
+              }
               onPress={() =>
                 router.replace(
                   '/staff-queues' as Href,
                 )
               }
             >
-              <Text style={styles.backToQueueText}>
+              <Text
+                style={
+                  styles.backToQueueText
+                }
+              >
                 Back to Queue
               </Text>
             </Pressable>
@@ -126,7 +132,9 @@ export default function ReservationDetailsScreen() {
   return (
     <SafeAreaView style={styles.page}>
       <View style={styles.phoneContainer}>
-        <AppHeader rightAction="profile" />
+        <AppHeader
+          rightAction="profile"
+        />
 
         <ScrollView
           style={styles.scrollView}
@@ -161,7 +169,7 @@ export default function ReservationDetailsScreen() {
             </Text>
           </View>
 
-          {/* Resource information */}
+          {/* Book / Seat information */}
           <View style={styles.resourceCard}>
             <View
               style={[
@@ -186,31 +194,55 @@ export default function ReservationDetailsScreen() {
             </View>
 
             <View style={styles.resourceInfo}>
-              <Text style={styles.resourceTitle}>
+              <Text
+                style={
+                  styles.resourceTitle
+                }
+              >
                 {reservation.title}
               </Text>
 
               {isBook ? (
                 <>
-                  <Text style={styles.resourceMeta}>
+                  <Text
+                    style={
+                      styles.resourceMeta
+                    }
+                  >
                     By {reservation.author}
                   </Text>
 
-                  <Text style={styles.resourceMeta}>
+                  <Text
+                    style={
+                      styles.resourceMeta
+                    }
+                  >
                     Published on{' '}
-                    {reservation.published}
+                    {
+                      reservation.published
+                    }
                   </Text>
                 </>
               ) : (
                 <>
-                  <Text style={styles.resourceMeta}>
+                  <Text
+                    style={
+                      styles.resourceMeta
+                    }
+                  >
                     Location:{' '}
                     {reservation.author}
                   </Text>
 
-                  <Text style={styles.resourceMeta}>
+                  <Text
+                    style={
+                      styles.resourceMeta
+                    }
+                  >
                     Time Slot:{' '}
-                    {reservation.published}
+                    {
+                      reservation.published
+                    }
                   </Text>
                 </>
               )}
@@ -285,7 +317,7 @@ export default function ReservationDetailsScreen() {
               }
             />
 
-            {/* Reservation status */}
+            {/* Status */}
             <View style={styles.statusRow}>
               <Text style={styles.infoLabel}>
                 Reservation Status
@@ -300,7 +332,11 @@ export default function ReservationDetailsScreen() {
                   },
                 ]}
               >
-                <Text style={styles.statusText}>
+                <Text
+                  style={
+                    styles.statusText
+                  }
+                >
                   {statusStyle.label}
                 </Text>
               </View>
@@ -334,7 +370,11 @@ export default function ReservationDetailsScreen() {
               color="#FFFFFF"
             />
 
-            <Text style={styles.updateButtonText}>
+            <Text
+              style={
+                styles.updateButtonText
+              }
+            >
               Update Reservation
             </Text>
           </Pressable>
@@ -556,10 +596,8 @@ const styles = StyleSheet.create({
 
   infoValue: {
     maxWidth: '60%',
-
     fontSize: 10,
     color: '#555555',
-
     textAlign: 'right',
   },
 

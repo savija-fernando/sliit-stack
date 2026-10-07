@@ -1,4 +1,4 @@
-import ReservationDetailsScreen from '@/features/reservations/components/screens/services/ReservationDetailsScreen';
+import ReservationDetailsScreen from '@/features/reservations/screens/ReservationDetailsScreen';
 
 export default function ReservationDetailsRoute() {
   return <ReservationDetailsScreen />;

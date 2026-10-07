@@ -1,7 +1,5 @@
-import BookReservationQueueScreen from '@/features/reservations/components/screens/services/BookReservationQueueScreen';
+import BookReservationQueueScreen from '@/features/reservations/screens/BookReservationQueueScreen';
 
 export default function StaffQueuesRoute() {
-  return (
-    <BookReservationQueueScreen />
-  );
+  return <BookReservationQueueScreen />;
 }
