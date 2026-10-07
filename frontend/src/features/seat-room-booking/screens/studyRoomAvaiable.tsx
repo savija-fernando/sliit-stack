@@ -197,10 +197,11 @@ export default function StudyRoomsAvailableScreen() {
                       </Text>
                     </View>
                     <Text style={styles.roomMeta}>
-                      {room.floor}
-                      {room.capacity ? ` · Up to ${room.capacity} people` : ''}
+                      {room.location}
                     </Text>
-                    <Text style={styles.amenities}>{room.amenities}</Text>
+                    <Text style={styles.amenities}>
+                      Condition: {room.condition}
+                    </Text>
                   </View>
 
                   {isSelected && (
@@ -244,21 +245,12 @@ export default function StudyRoomsAvailableScreen() {
                     <DetailRow
                       icon="map-marker-outline"
                       label="Location"
-                      value={room.floor}
-                    />
-                    <DetailRow
-                      icon="account-group-outline"
-                      label="Capacity"
-                      value={
-                        room.capacity
-                          ? `Up to ${room.capacity} people`
-                          : 'Not specified'
-                      }
+                      value={room.location}
                     />
                     <DetailRow
                       icon="tools"
-                      label="Amenities"
-                      value={room.amenities}
+                      label="Condition"
+                      value={room.condition}
                     />
                     {(date || time || duration) && (
                       <DetailRow

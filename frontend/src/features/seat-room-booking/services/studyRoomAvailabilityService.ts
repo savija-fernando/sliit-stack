@@ -3,9 +3,8 @@ import { supabase } from '@/lib/supabase';
 export type StudyRoom = {
   id: string;
   name: string;
-  floor: string;
-  capacity: number | null;
-  amenities: string;
+  location: string;
+  condition: string;
   description: string;
 };
 
@@ -72,30 +71,45 @@ function mapRoom(room: DatabaseRow): StudyRoom {
 
   if ((typeof id !== 'string' && typeof id !== 'number') || !name) {
     throw new Error(
-      'A row in study_rooms is missing its id or name/room_name column.',
+      'A row in studyroom is missing its id or name column.',
     );
   }
-
-  const capacityValue = room.capacity;
-  const capacity =
-    typeof capacityValue === 'number'
-      ? capacityValue
-      : typeof capacityValue === 'string' && capacityValue.trim()
-        ? Number(capacityValue)
-        : null;
 
   return {
     id: String(id),
     name,
-    floor: getRoomString(room, ['floor', 'location'], 'Study area'),
-    capacity: capacity !== null && Number.isFinite(capacity) ? capacity : null,
-    amenities: getRoomString(room, ['amenities'], 'Study room'),
+    location: getRoomString(room, ['location', 'floor'], 'Study area'),
+    condition: getRoomString(room, ['condition', 'amenities'], 'Study room'),
     description: getRoomString(
       room,
       ['description'],
       'A space for focused study.',
     ),
   };
+}
+
+function isWithinAvailability(
+  room: DatabaseRow,
+  requested: { start: number; end: number },
+): boolean {
+  const availableFrom = room.available_from;
+  const availableUntil = room.available_until;
+  const start =
+    availableFrom == null ? null : toMinutes(availableFrom);
+  const end =
+    availableUntil == null ? null : toMinutes(availableUntil);
+
+  if (availableFrom != null && start === null) {
+    throw new Error('A studyroom row has an invalid available_from time.');
+  }
+  if (availableUntil != null && end === null) {
+    throw new Error('A studyroom row has an invalid available_until time.');
+  }
+
+  return (
+    (start === null || requested.start >= start) &&
+    (end === null || requested.end <= end)
+  );
 }
 
 export async function getAvailableStudyRooms({
@@ -110,7 +124,7 @@ export async function getAvailableStudyRooms({
   const requested = parseRequestedTime(time, duration);
 
   const [roomsResult, bookingsResult] = await Promise.all([
-    supabase.from('study_rooms').select('*'),
+    supabase.from('studyroom').select('*'),
     supabase
       .from('studyroombookings')
       .select('*')
@@ -130,6 +144,7 @@ export async function getAvailableStudyRooms({
   const rooms = (roomsResult.data ?? [])
     .map((row) => row as DatabaseRow)
     .filter((room) => room.is_active !== false)
+    .filter((room) => isWithinAvailability(room, requested))
     .map(mapRoom);
   const bookedRoomIds = new Set<string>();
 

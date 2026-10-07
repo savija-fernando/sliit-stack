@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,67 +13,129 @@ import {
 import { useRouter } from 'expo-router';
 
 import AppHeader from '@/components/AppHeader';
+import { addSeat, addStudyRoom } from '../services/studyRoomAdminService';
 
 type ResourceType = 'room' | 'seat';
 type ResourceForm = {
   name: string;
-  floor: string;
   location: string;
-  capacity: string;
-  amenities: string;
   description: string;
+  condition: string;
+  availableFrom: string;
+  availableUntil: string;
 };
 
 const EMPTY_FORM: ResourceForm = {
   name: '',
-  floor: '',
   location: '',
-  capacity: '',
-  amenities: '',
   description: '',
+  condition: '',
+  availableFrom: '',
+  availableUntil: '',
 };
+
+const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
+
+function timeToMinutes(value: string): number {
+  const [hours, minutes, seconds = 0] = value.split(':').map(Number);
+  return hours * 60 + minutes + seconds / 60;
+}
 
 export default function AdminSeatStudyRoomScreen() {
   const router = useRouter();
   const [resourceType, setResourceType] = useState<ResourceType>('room');
   const [form, setForm] = useState<ResourceForm>(EMPTY_FORM);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmitDisabled = isSubmitting;
 
   const updateField = (field: keyof ResourceForm, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
     setError('');
-    setNotice('');
   };
 
   const selectType = (type: ResourceType) => {
     setResourceType(type);
     setError('');
-    setNotice('');
   };
 
-  const handleSubmit = () => {
-    if (!form.name.trim() || !form.floor.trim() || !form.location.trim()) {
-      setError('Please complete the name, floor, and location fields.');
-      setNotice('');
+  const handleSubmit = async () => {
+    if (
+      resourceType === 'room' &&
+      (!form.name.trim() || !form.location.trim())
+    ) {
+      setError('Please complete the room name and location fields.');
+      return;
+    }
+    if (resourceType === 'seat' && !form.name.trim()) {
+      setError('Please enter the seat name or identifier.');
+      return;
+    }
+
+    const availableFrom = form.availableFrom.trim();
+    const availableUntil = form.availableUntil.trim();
+
+    if (
+      resourceType === 'room' &&
+      ((availableFrom && !TIME_PATTERN.test(availableFrom)) ||
+        (availableUntil && !TIME_PATTERN.test(availableUntil)))
+    ) {
+      setError('Enter availability times in 24-hour format, such as 08:30.');
       return;
     }
 
     if (
       resourceType === 'room' &&
-      (!form.capacity.trim() ||
-        !Number.isInteger(Number(form.capacity)) ||
-        Number(form.capacity) < 1)
+      availableFrom &&
+      availableUntil &&
+      timeToMinutes(availableFrom) >= timeToMinutes(availableUntil)
     ) {
-      setError('Enter a valid room capacity of at least one person.');
-      setNotice('');
+      setError('Available until must be later than available from.');
+      return;
+    }
+
+    if (resourceType === 'seat' && !form.condition.trim()) {
+      setError('Please enter the seat condition.');
       return;
     }
 
     setError('');
-    setNotice(
-      'Details are valid. Database saving is not connected yet, so nothing has been created.',
-    );
+    setIsSubmitting(true);
+
+    try {
+      if (resourceType === 'room') {
+        await addStudyRoom({
+          name: form.name.trim(),
+          location: form.location.trim(),
+          description: form.description.trim(),
+          condition: form.condition.trim(),
+          availableFrom: availableFrom || null,
+          availableUntil: availableUntil || null,
+        });
+      } else {
+        await addSeat({
+          name: form.name.trim(),
+          condition: form.condition.trim(),
+          description: form.description.trim(),
+        });
+      }
+
+      router.replace({
+        pathname: '/admin-confirmation',
+        params: {
+          resourceName:
+            form.name.trim(),
+        },
+      });
+    } catch (submitError: unknown) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'An unexpected error occurred while adding the study room.',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -130,61 +193,66 @@ export default function AdminSeatStudyRoomScreen() {
           <Text style={styles.sectionTitle}>
             {resourceType === 'room' ? 'Room details' : 'Seat details'}
           </Text>
-          <FormField
-            label={resourceType === 'room' ? 'Room name' : 'Seat identifier'}
-            placeholder={
-              resourceType === 'room' ? 'e.g. Quiet Study Room' : 'e.g. A01'
-            }
-            value={form.name}
-            onChangeText={(value) => updateField('name', value)}
-            autoCapitalize="words"
-          />
-          <FormField
-            label="Building or area"
-            placeholder="e.g. Main Library"
-            value={form.location}
-            onChangeText={(value) => updateField('location', value)}
-            autoCapitalize="words"
-          />
-          <View style={styles.row}>
-            <View style={styles.rowField}>
+          {resourceType === 'room' && (
+            <>
               <FormField
-                label="Floor"
-                placeholder="e.g. 2nd floor"
-                value={form.floor}
-                onChangeText={(value) => updateField('floor', value)}
+                label="Room name"
+                placeholder="e.g. Quiet Study Room"
+                value={form.name}
+                onChangeText={(value) => updateField('name', value)}
                 autoCapitalize="words"
               />
-            </View>
-            {resourceType === 'room' && (
+              <FormField
+                label="Building or area"
+                placeholder="e.g. Main Library"
+                value={form.location}
+                onChangeText={(value) => updateField('location', value)}
+                autoCapitalize="words"
+              />
+            </>
+          )}
+          {resourceType === 'seat' && (
+            <FormField
+              label="Seat name or identifier"
+              placeholder="e.g. A01"
+              value={form.name}
+              onChangeText={(value) => updateField('name', value)}
+              autoCapitalize="characters"
+            />
+          )}
+          <FormField
+            label="Condition"
+            placeholder={
+              resourceType === 'room'
+                ? 'e.g. Good, Under maintenance'
+                : 'e.g. Available, Needs repair'
+            }
+            value={form.condition}
+            onChangeText={(value) => updateField('condition', value)}
+            autoCapitalize="sentences"
+            required={resourceType === 'seat'}
+          />
+          {resourceType === 'room' && (
+            <View style={styles.row}>
               <View style={styles.rowField}>
                 <FormField
-                  label="Capacity"
-                  placeholder="e.g. 6"
-                  value={form.capacity}
-                  onChangeText={(value) => updateField('capacity', value)}
-                  keyboardType="number-pad"
+                  label="Available from"
+                  placeholder="e.g. 08:30"
+                  value={form.availableFrom}
+                  onChangeText={(value) => updateField('availableFrom', value)}
+                  required={false}
                 />
               </View>
-            )}
-          </View>
-
-          {resourceType === 'room' ? (
-            <FormField
-              label="Amenities"
-              placeholder="e.g. Whiteboard, power outlets"
-              value={form.amenities}
-              onChangeText={(value) => updateField('amenities', value)}
-              autoCapitalize="sentences"
-            />
-          ) : (
-            <FormField
-              label="Section or zone"
-              placeholder="e.g. Window seats, Zone B"
-              value={form.amenities}
-              onChangeText={(value) => updateField('amenities', value)}
-              autoCapitalize="words"
-            />
+              <View style={styles.rowField}>
+                <FormField
+                  label="Available until"
+                  placeholder="e.g. 18:00"
+                  value={form.availableUntil}
+                  onChangeText={(value) => updateField('availableUntil', value)}
+                  required={false}
+                />
+              </View>
+            </View>
           )}
           <FormField
             label="Description (optional)"
@@ -197,6 +265,7 @@ export default function AdminSeatStudyRoomScreen() {
             onChangeText={(value) => updateField('description', value)}
             multiline
             autoCapitalize="sentences"
+            required={false}
           />
 
           {error ? (
@@ -209,34 +278,40 @@ export default function AdminSeatStudyRoomScreen() {
               <Text style={styles.feedbackErrorText}>{error}</Text>
             </View>
           ) : null}
-          {notice ? (
-            <View style={styles.feedbackNotice} accessibilityRole="alert">
-              <MaterialCommunityIcons
-                name="information-outline"
-                size={19}
-                color="#1D4ED8"
-              />
-              <Text style={styles.feedbackNoticeText}>{notice}</Text>
-            </View>
-          ) : null}
-
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ disabled: isSubmitDisabled }}
+            disabled={isSubmitDisabled}
             onPress={handleSubmit}
             style={({ pressed }) => [
               styles.submitButton,
-              pressed && styles.submitButtonPressed,
+              isSubmitDisabled && styles.submitButtonDisabled,
+              pressed && !isSubmitDisabled && styles.submitButtonPressed,
             ]}
           >
-            <MaterialCommunityIcons
-              name="check-circle-outline"
-              size={20}
-              color="#FFFFFF"
-            />
-            <Text style={styles.submitButtonText}>Review details</Text>
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <MaterialCommunityIcons
+                name="check-circle-outline"
+                size={20}
+                color="#FFFFFF"
+              />
+            )}
+            <Text style={styles.submitButtonText}>
+              {isSubmitting
+              ? resourceType === 'room'
+                ? 'Adding study room…'
+                : 'Adding seat…'
+              : resourceType === 'room'
+                ? 'Add study room'
+                : 'Add seat'}
+          </Text>
           </Pressable>
           <Text style={styles.footerNote}>
-            Required fields are marked with an asterisk (*).
+          {resourceType === 'room'
+            ? 'Required fields are marked with an asterisk (*).'
+            : 'Seat condition is required. The database generates the seat ID and creation time.'}
           </Text>
         </View>
       </ScrollView>
@@ -298,6 +373,7 @@ function FormField({
   multiline = false,
   keyboardType = 'default',
   autoCapitalize = 'none',
+  required = true,
 }: {
   label: string;
   placeholder: string;
@@ -305,13 +381,14 @@ function FormField({
   onChangeText: (value: string) => void;
   multiline?: boolean;
   keyboardType?: 'default' | 'number-pad';
-  autoCapitalize?: 'none' | 'words' | 'sentences';
+  autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
+  required?: boolean;
 }) {
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>
         {label}
-        {!label.includes('optional') ? <Text style={styles.required}> *</Text> : null}
+        {required ? <Text style={styles.required}> *</Text> : null}
       </Text>
       <TextInput
         accessibilityLabel={label}
@@ -518,21 +595,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
-  feedbackNotice: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginBottom: 14,
-    padding: 12,
-    borderRadius: 11,
-    backgroundColor: '#EFF6FF',
-  },
-  feedbackNoticeText: {
-    flex: 1,
-    color: '#1E40AF',
-    fontSize: 13,
-    lineHeight: 19,
-  },
   submitButton: {
     minHeight: 50,
     flexDirection: 'row',
@@ -545,6 +607,9 @@ const styles = StyleSheet.create({
   },
   submitButtonPressed: {
     opacity: 0.86,
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
   },
   submitButtonText: {
     color: '#FFFFFF',
