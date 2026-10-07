@@ -37,6 +37,12 @@ export default function StaffDashboardScreen() {
     );
   };
 
+  const openExpiredReservations = () => {
+    router.push(
+      '/expired-reservations' as Href,
+    );
+  };
+
   return (
     <SafeAreaView style={styles.page}>
       <View style={styles.phoneContainer}>
@@ -54,13 +60,38 @@ export default function StaffDashboardScreen() {
         >
           {/* Greeting */}
           <View style={styles.greetingSection}>
-            <Text style={styles.title}>
-              Hello, Staff!
+            <View>
+              <Text style={styles.welcomeText}>
+                Staff Dashboard
+              </Text>
+
+              <Text style={styles.title}>
+                Hello, Staff!
+              </Text>
+
+              <Text style={styles.subtitle}>
+                Manage reservations and keep the campus
+                running smoothly
+              </Text>
+            </View>
+
+            <View style={styles.greetingIcon}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={29}
+                color="#1D4ED8"
+              />
+            </View>
+          </View>
+
+          {/* Section heading */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>
+              Overview
             </Text>
 
-            <Text style={styles.subtitle}>
-              Manage reservations and keep the campus
-              running smoothly
+            <Text style={styles.sectionSubtitle}>
+              Today
             </Text>
           </View>
 
@@ -70,12 +101,13 @@ export default function StaffDashboardScreen() {
             <StaffStatCard
               value="12"
               label="Book Requests"
+              variant="blue"
               onPress={openBookRequests}
               icon={
                 <Ionicons
                   name="book"
-                  size={27}
-                  color="#1F3E72"
+                  size={25}
+                  color="#2563EB"
                 />
               }
             />
@@ -84,38 +116,44 @@ export default function StaffDashboardScreen() {
             <StaffStatCard
               value="09"
               label="Seat Requests"
+              variant="green"
               onPress={openSeatRequests}
               icon={
                 <MaterialCommunityIcons
                   name="seat"
-                  size={29}
-                  color="#1F3E72"
+                  size={27}
+                  color="#059669"
                 />
               }
             />
 
-            {/* Expired - will connect later */}
+            {/* Expired Reservations */}
             <StaffStatCard
               value="26"
               label="Expired Today"
+              variant="orange"
+              onPress={
+                openExpiredReservations
+              }
               icon={
                 <Ionicons
-                  name="time"
-                  size={29}
-                  color="#1F3E72"
+                  name="time-outline"
+                  size={27}
+                  color="#EA580C"
                 />
               }
             />
 
-            {/* Open Issues - will connect later */}
+            {/* Open Issues */}
             <StaffStatCard
               value="04"
               label="Open Issues"
+              variant="red"
               icon={
                 <Ionicons
-                  name="warning"
-                  size={29}
-                  color="#1F3E72"
+                  name="warning-outline"
+                  size={27}
+                  color="#DC2626"
                 />
               }
             />
@@ -123,15 +161,21 @@ export default function StaffDashboardScreen() {
 
           {/* Recent activity heading */}
           <View style={styles.activityHeader}>
-            <Text style={styles.activityTitle}>
-              Recent Activity
-            </Text>
+            <View>
+              <Text style={styles.activityTitle}>
+                Recent Activity
+              </Text>
+
+              <Text style={styles.activitySubtitle}>
+                Latest staff reservation activity
+              </Text>
+            </View>
 
             <View style={styles.updatedContainer}>
               <View style={styles.smallDot} />
 
               <Text style={styles.updatedText}>
-                Updated a minute ago
+                Just now
               </Text>
             </View>
           </View>
@@ -177,11 +221,13 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     maxWidth: 390,
-    backgroundColor: '#F6F8FC',
+
+    backgroundColor: '#F8FAFC',
 
     shadowColor: '#000000',
     shadowOpacity: 0.08,
     shadowRadius: 8,
+
     shadowOffset: {
       width: 0,
       height: 0,
@@ -201,81 +247,162 @@ const styles = StyleSheet.create({
   },
 
   greetingSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 15,
+    minHeight: 128,
 
-    marginBottom: 18,
+    paddingHorizontal: 17,
+    paddingVertical: 17,
 
-    borderRadius: 14,
+    marginBottom: 21,
+
+    borderRadius: 18,
 
     backgroundColor: '#FFFFFF',
 
     borderWidth: 1,
-    borderColor: '#EDF1F6',
+    borderColor: '#E2E8F0',
+
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
 
     shadowColor: '#000000',
     shadowOpacity: 0.05,
-    shadowRadius: 5,
+    shadowRadius: 8,
+
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 3,
     },
 
-    elevation: 1,
+    elevation: 2,
+  },
+
+  welcomeText: {
+    marginBottom: 3,
+
+    fontSize: 9,
+    fontWeight: '700',
+
+    letterSpacing: 0.7,
+
+    textTransform: 'uppercase',
+
+    color: '#2563EB',
   },
 
   title: {
     fontSize: 24,
     fontWeight: '800',
+
     color: '#111827',
   },
 
   subtitle: {
-    marginTop: 4,
-    width: 245,
-    fontSize: 11,
-    lineHeight: 16,
-    color: '#777777',
+    marginTop: 5,
+
+    width: 225,
+
+    fontSize: 10,
+    lineHeight: 15,
+
+    color: '#64748B',
+  },
+
+  greetingIcon: {
+    width: 50,
+    height: 50,
+
+    borderRadius: 16,
+
+    backgroundColor: '#EFF6FF',
+
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  sectionHeader: {
+    marginBottom: 10,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+
+    color: '#111827',
+  },
+
+  sectionSubtitle: {
+    fontSize: 9,
+    fontWeight: '600',
+
+    color: '#94A3B8',
   },
 
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+
     justifyContent: 'space-between',
+
     rowGap: 14,
   },
 
   activityHeader: {
-    marginTop: 27,
-    marginBottom: 11,
+    marginTop: 29,
+    marginBottom: 12,
 
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
   },
 
   activityTitle: {
     fontSize: 18,
     fontWeight: '800',
+
     color: '#111827',
   },
 
+  activitySubtitle: {
+    marginTop: 2,
+
+    fontSize: 9,
+
+    color: '#94A3B8',
+  },
+
   updatedContainer: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+
+    borderRadius: 20,
+
+    backgroundColor: '#EFF6FF',
+
     flexDirection: 'row',
     alignItems: 'center',
   },
 
   smallDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#345A9C',
+    width: 5,
+    height: 5,
+
+    borderRadius: 3,
+
+    backgroundColor: '#2563EB',
+
     marginRight: 4,
   },
 
   updatedText: {
     fontSize: 8,
-    color: '#888888',
+    fontWeight: '600',
+
+    color: '#2563EB',
   },
 
   activityList: {

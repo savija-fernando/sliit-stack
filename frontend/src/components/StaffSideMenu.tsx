@@ -102,7 +102,11 @@ export default function StaffSideMenu({
             <MenuItem
               icon="time-outline"
               label="Expired Reservations"
-              disabled
+              onPress={() =>
+                navigate(
+                  '/expired-reservations' as Href,
+                )
+              }
             />
 
             <MenuItem
