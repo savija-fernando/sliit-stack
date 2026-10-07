@@ -6,42 +6,48 @@ import {
 } from 'react-native';
 
 import type {
+  ReservationKind,
   ReservationStatus,
 } from '../../../types/reservation';
 
 type Props = {
   activeStatus: ReservationStatus;
+  reservationKind: ReservationKind;
   onChange: (
     status: ReservationStatus,
   ) => void;
 };
 
-const tabs: {
-  label: string;
-  value: ReservationStatus;
-}[] = [
-  {
-    label: 'Pending',
-    value: 'pending',
-  },
-  {
-    label: 'Approved',
-    value: 'approved',
-  },
-  {
-    label: 'Rejected',
-    value: 'rejected',
-  },
-  {
-    label: 'Returned',
-    value: 'returned',
-  },
-];
-
 export default function ReservationStatusTabs({
   activeStatus,
+  reservationKind,
   onChange,
 }: Props) {
+  const tabs: {
+    label: string;
+    value: ReservationStatus;
+  }[] = [
+    {
+      label: 'Pending',
+      value: 'pending',
+    },
+    {
+      label: 'Approved',
+      value: 'approved',
+    },
+    {
+      label: 'Rejected',
+      value: 'rejected',
+    },
+  ];
+
+  if (reservationKind === 'book') {
+    tabs.push({
+      label: 'Returned',
+      value: 'returned',
+    });
+  }
+
   return (
     <View style={styles.container}>
       {tabs.map((tab) => {

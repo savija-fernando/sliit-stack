@@ -92,28 +92,19 @@ export default function BookReservationQueueScreen() {
     setSearchQuery,
   ] = useState('');
 
-  /*
-   * If Dashboard opens:
-   *
-   * /staff-queues?type=book
-   * or
-   * /staff-queues?type=seat
-   *
-   * this automatically selects
-   * the correct queue type.
-   */
   useEffect(() => {
     setActiveType(
       getReservationType(
         params.type,
       ),
     );
+
+    setActiveStatus('pending');
+
+    setSearchText('');
+    setSearchQuery('');
   }, [params.type]);
 
-  /*
-   * Refresh reservation data whenever
-   * the queue screen becomes active.
-   */
   useFocusEffect(
     useCallback(() => {
       setReservations(
@@ -142,17 +133,8 @@ export default function BookReservationQueueScreen() {
   ) => {
     setActiveType(type);
 
-    /*
-     * Reset to Pending when switching
-     * between Book and Seat queues.
-     */
     setActiveStatus('pending');
 
-    /*
-     * Clear previous search because a
-     * book search should not remain when
-     * switching to Seat reservations.
-     */
     setSearchText('');
     setSearchQuery('');
   };
@@ -164,9 +146,14 @@ export default function BookReservationQueueScreen() {
       status === 'pending' ||
       status === 'approved' ||
       status === 'rejected' ||
-      status === 'returned'
+      (
+        activeType === 'book' &&
+        status === 'returned'
+      )
     ) {
-      setActiveStatus(status);
+      setActiveStatus(
+        status as QueueStatus,
+      );
     }
   };
 
@@ -231,7 +218,6 @@ export default function BookReservationQueueScreen() {
           rightAction="profile"
         />
 
-        {/* Page heading */}
         <View style={styles.titleRow}>
           <Pressable
             onPress={() =>
@@ -255,7 +241,6 @@ export default function BookReservationQueueScreen() {
           </Text>
         </View>
 
-        {/* Search */}
         <View style={styles.searchSection}>
           <View style={styles.searchBox}>
             <TextInput
@@ -282,6 +267,7 @@ export default function BookReservationQueueScreen() {
                   ({
                     outlineStyle:
                       'none',
+
                     outlineWidth: 0,
                   } as any),
               ]}
@@ -327,7 +313,7 @@ export default function BookReservationQueueScreen() {
           </Pressable>
         </View>
 
-        {/* Book / Seat selector */}
+        {/* Books / Seats */}
         <ReservationTypeTabs
           activeType={activeType}
           onChange={
@@ -335,11 +321,14 @@ export default function BookReservationQueueScreen() {
           }
         />
 
-        {/* Reservation status selector */}
+        {/* Dynamic status tabs */}
         <View style={styles.tabsWrapper}>
           <ReservationStatusTabs
             activeStatus={
               activeStatus
+            }
+            reservationKind={
+              activeType
             }
             onChange={
               handleStatusChange
@@ -347,7 +336,6 @@ export default function BookReservationQueueScreen() {
           />
         </View>
 
-        {/* Queue */}
         <ScrollView
           style={styles.listScroll}
           contentContainerStyle={
@@ -511,7 +499,8 @@ const styles = StyleSheet.create({
 
     color: '#111111',
 
-    backgroundColor: 'transparent',
+    backgroundColor:
+      'transparent',
   },
 
   clearButton: {
@@ -528,7 +517,8 @@ const styles = StyleSheet.create({
 
     borderRadius: 6,
 
-    backgroundColor: '#08245B',
+    backgroundColor:
+      '#08245B',
 
     alignItems: 'center',
     justifyContent: 'center',

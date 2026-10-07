@@ -10,7 +10,10 @@ import {
   View,
 } from 'react-native';
 
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+} from '@expo/vector-icons';
 
 import {
   useLocalSearchParams,
@@ -32,28 +35,6 @@ type ReservationUpdateStatus =
   | 'rejected'
   | 'returned'
   | 'expired';
-
-const statusOptions: {
-  label: string;
-  value: ReservationUpdateStatus;
-}[] = [
-  {
-    label: 'Approved',
-    value: 'approved',
-  },
-  {
-    label: 'Rejected',
-    value: 'rejected',
-  },
-  {
-    label: 'Returned',
-    value: 'returned',
-  },
-  {
-    label: 'Expired',
-    value: 'expired',
-  },
-];
 
 export default function UpdateReservationScreen() {
   const router = useRouter();
@@ -90,6 +71,66 @@ export default function UpdateReservationScreen() {
     reservation?.note ?? '',
   );
 
+  if (!reservation) {
+    return (
+      <SafeAreaView style={styles.page}>
+        <View style={styles.phoneContainer}>
+          <AppHeader rightAction="profile" />
+
+          <View style={styles.notFound}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={44}
+              color="#9CA3AF"
+            />
+
+            <Text style={styles.notFoundText}>
+              Reservation not found.
+            </Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const isBook =
+    reservation.kind === 'book';
+
+  const statusOptions: {
+    label: string;
+    value: ReservationUpdateStatus;
+  }[] = [
+    {
+      label: 'Approved',
+      value: 'approved',
+    },
+
+    {
+      label: 'Rejected',
+      value: 'rejected',
+    },
+  ];
+
+  /*
+   * Returned only makes sense
+   * for book reservations.
+   */
+  if (isBook) {
+    statusOptions.push({
+      label: 'Returned',
+      value: 'returned',
+    });
+  }
+
+  /*
+   * Both books and seats can
+   * eventually become expired.
+   */
+  statusOptions.push({
+    label: 'Expired',
+    value: 'expired',
+  });
+
   const handleUpdate = () => {
     updateReservation(
       reservationId,
@@ -102,26 +143,12 @@ export default function UpdateReservationScreen() {
     );
   };
 
-  if (!reservation) {
-    return (
-      <SafeAreaView style={styles.page}>
-        <View style={styles.phoneContainer}>
-          <AppHeader rightAction="profile" />
-
-          <View style={styles.notFound}>
-            <Text style={styles.notFoundText}>
-              Reservation not found.
-            </Text>
-          </View>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.page}>
       <View style={styles.phoneContainer}>
-        <AppHeader rightAction="profile" />
+        <AppHeader
+          rightAction="profile"
+        />
 
         <ScrollView
           style={styles.scrollView}
@@ -150,36 +177,80 @@ export default function UpdateReservationScreen() {
             </Pressable>
 
             <Text style={styles.pageTitle}>
-              Update Reservation Details
+              Update{' '}
+              {isBook
+                ? 'Book'
+                : 'Seat'}{' '}
+              Reservation
             </Text>
           </View>
 
-          <View style={styles.bookCard}>
-            <View style={styles.bookIcon}>
-              <Ionicons
-                name="book"
-                size={32}
-                color="#FFFFFF"
-              />
+          <View style={styles.resourceCard}>
+            <View
+              style={[
+                styles.resourceIcon,
+
+                !isBook &&
+                  styles.seatIcon,
+              ]}
+            >
+              {isBook ? (
+                <Ionicons
+                  name="book"
+                  size={32}
+                  color="#FFFFFF"
+                />
+              ) : (
+                <MaterialCommunityIcons
+                  name="seat"
+                  size={34}
+                  color="#FFFFFF"
+                />
+              )}
             </View>
 
-            <View style={styles.bookInformation}>
-              <Text style={styles.bookTitle}>
+            <View style={styles.resourceInformation}>
+              <Text style={styles.resourceTitle}>
                 {reservation.title}
               </Text>
 
-              <Text style={styles.bookMeta}>
-                By {reservation.author}
-              </Text>
+              {isBook ? (
+                <>
+                  <Text style={styles.resourceMeta}>
+                    By {reservation.author}
+                  </Text>
 
-              <Text style={styles.bookMeta}>
-                Published on{' '}
-                {reservation.published}
-              </Text>
+                  <Text style={styles.resourceMeta}>
+                    Published on{' '}
+                    {reservation.published}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.resourceMeta}>
+                    Location:{' '}
+                    {reservation.author}
+                  </Text>
 
-              <View style={styles.availableBadge}>
-                <Text style={styles.availableText}>
-                  Available
+                  <Text style={styles.resourceMeta}>
+                    Time Slot:{' '}
+                    {reservation.published}
+                  </Text>
+                </>
+              )}
+
+              <View
+                style={[
+                  styles.resourceBadge,
+
+                  !isBook &&
+                    styles.seatBadge,
+                ]}
+              >
+                <Text style={styles.resourceBadgeText}>
+                  {isBook
+                    ? 'Available'
+                    : 'Seat Reservation'}
                 </Text>
               </View>
             </View>
@@ -320,317 +391,319 @@ function getInitialStatus(
   return 'approved';
 }
 
-const styles =
-  StyleSheet.create({
-    page: {
-      flex: 1,
+const styles = StyleSheet.create({
+  page: {
+    flex: 1,
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+  },
 
-      backgroundColor:
-        '#E5E7EB',
+  phoneContainer: {
+    flex: 1,
+    width: '100%',
+    maxWidth: 390,
+    backgroundColor: '#F7F9FC',
+  },
 
-      alignItems: 'center',
+  scrollView: {
+    flex: 1,
+  },
+
+  content: {
+    paddingHorizontal: 15,
+    paddingTop: 13,
+    paddingBottom: 25,
+  },
+
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  backButton: {
+    marginRight: 7,
+  },
+
+  pageTitle: {
+    flex: 1,
+
+    fontSize: 18,
+    fontWeight: '800',
+
+    color: '#111111',
+  },
+
+  resourceCard: {
+    padding: 14,
+
+    borderRadius: 10,
+
+    backgroundColor: '#FFFFFF',
+
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+
+    shadowColor: '#000000',
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+
+    shadowOffset: {
+      width: 0,
+      height: 2,
     },
 
-    phoneContainer: {
-      flex: 1,
+    elevation: 2,
+  },
 
-      width: '100%',
-      maxWidth: 390,
+  resourceIcon: {
+    width: 48,
+    height: 56,
 
-      backgroundColor:
-        '#F7F9FC',
-    },
+    borderRadius: 6,
 
-    scrollView: {
-      flex: 1,
-    },
+    backgroundColor: '#111827',
 
-    content: {
-      paddingHorizontal: 15,
-      paddingTop: 13,
-      paddingBottom: 25,
-    },
+    alignItems: 'center',
+    justifyContent: 'center',
 
-    titleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
+    marginRight: 12,
+  },
 
-      marginBottom: 16,
-    },
+  seatIcon: {
+    backgroundColor: '#1F3E72',
+  },
 
-    backButton: {
-      marginRight: 7,
-    },
+  resourceInformation: {
+    flex: 1,
+  },
 
-    pageTitle: {
-      flex: 1,
+  resourceTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#111111',
+  },
 
-      fontSize: 18,
-      fontWeight: '800',
+  resourceMeta: {
+    marginTop: 3,
+    fontSize: 10,
+    color: '#555555',
+  },
 
-      color: '#111111',
-    },
+  resourceBadge: {
+    marginTop: 7,
 
-    bookCard: {
-      padding: 14,
+    alignSelf: 'flex-start',
 
-      borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
 
-      backgroundColor:
-        '#FFFFFF',
+    borderRadius: 4,
 
-      flexDirection: 'row',
-      alignItems: 'center',
+    backgroundColor: '#16A34A',
+  },
 
-      borderWidth: 1,
-      borderColor: '#E5E7EB',
-    },
+  seatBadge: {
+    backgroundColor: '#345A9C',
+  },
 
-    bookIcon: {
-      width: 48,
-      height: 56,
+  resourceBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
 
-      borderRadius: 6,
+  reservationInfo: {
+    minHeight: 52,
 
-      backgroundColor:
-        '#111827',
+    marginTop: 14,
 
-      alignItems: 'center',
-      justifyContent: 'center',
+    paddingHorizontal: 13,
+    paddingVertical: 12,
 
-      marginRight: 12,
-    },
+    borderRadius: 8,
 
-    bookInformation: {
-      flex: 1,
-    },
+    backgroundColor: '#FFFFFF',
 
-    bookTitle: {
-      fontSize: 14,
-      fontWeight: '800',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
 
-      color: '#111111',
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
 
-    bookMeta: {
-      marginTop: 3,
+  infoLabel: {
+    fontSize: 11,
+    fontWeight: '700',
 
-      fontSize: 10,
+    color: '#333333',
+  },
 
-      color: '#555555',
-    },
+  infoValue: {
+    fontSize: 10,
 
-    availableBadge: {
-      marginTop: 7,
+    color: '#555555',
+  },
 
-      alignSelf: 'flex-start',
+  section: {
+    marginTop: 20,
+  },
 
-      paddingHorizontal: 10,
-      paddingVertical: 3,
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
 
-      borderRadius: 4,
+    color: '#111827',
+  },
 
-      backgroundColor:
-        '#16A34A',
-    },
+  optionalText: {
+    marginTop: 2,
 
-    availableText: {
-      fontSize: 8,
-      fontWeight: '700',
+    fontSize: 9,
 
-      color: '#FFFFFF',
-    },
+    color: '#9CA3AF',
+  },
 
-    reservationInfo: {
-      minHeight: 52,
+  statusCard: {
+    marginTop: 10,
 
-      marginTop: 14,
+    paddingHorizontal: 13,
+    paddingVertical: 5,
 
-      paddingHorizontal: 13,
-      paddingVertical: 12,
+    borderRadius: 9,
 
-      borderRadius: 8,
+    backgroundColor: '#FFFFFF',
 
-      backgroundColor:
-        '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
 
-      borderWidth: 1,
-      borderColor: '#E5E7EB',
+  statusOption: {
+    minHeight: 45,
 
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent:
-        'space-between',
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
 
-    infoLabel: {
-      fontSize: 11,
-      fontWeight: '700',
+    borderBottomWidth: 1,
+    borderBottomColor:
+      '#F0F2F5',
+  },
 
-      color: '#333333',
-    },
+  radioOuter: {
+    width: 18,
+    height: 18,
 
-    infoValue: {
-      fontSize: 10,
+    borderRadius: 9,
 
-      color: '#555555',
-    },
+    borderWidth: 2,
+    borderColor: '#9CA3AF',
 
-    section: {
-      marginTop: 20,
-    },
+    alignItems: 'center',
+    justifyContent: 'center',
 
-    sectionTitle: {
-      fontSize: 15,
-      fontWeight: '800',
+    marginRight: 11,
+  },
 
-      color: '#111827',
-    },
+  radioOuterSelected: {
+    borderColor: '#08245B',
+  },
 
-    optionalText: {
-      marginTop: 2,
+  radioInner: {
+    width: 9,
+    height: 9,
 
-      fontSize: 9,
+    borderRadius: 5,
 
-      color: '#9CA3AF',
-    },
+    backgroundColor:
+      '#08245B',
+  },
 
-    statusCard: {
-      marginTop: 10,
+  statusLabel: {
+    fontSize: 12,
 
-      paddingHorizontal: 13,
-      paddingVertical: 5,
+    color: '#4B5563',
+  },
 
-      borderRadius: 9,
+  statusLabelSelected: {
+    fontWeight: '700',
 
-      backgroundColor:
-        '#FFFFFF',
+    color: '#08245B',
+  },
 
-      borderWidth: 1,
-      borderColor: '#E5E7EB',
-    },
+  noteInput: {
+    height: 105,
 
-    statusOption: {
-      minHeight: 45,
+    marginTop: 8,
 
-      flexDirection: 'row',
-      alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 11,
 
-      borderBottomWidth: 1,
-      borderBottomColor:
-        '#F0F2F5',
-    },
+    borderRadius: 8,
 
-    radioOuter: {
-      width: 18,
-      height: 18,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
 
-      borderRadius: 9,
+    backgroundColor: '#FFFFFF',
 
-      borderWidth: 2,
-      borderColor: '#9CA3AF',
+    fontSize: 12,
 
-      alignItems: 'center',
-      justifyContent: 'center',
+    color: '#111827',
+  },
 
-      marginRight: 11,
-    },
+  characterCount: {
+    marginTop: 4,
 
-    radioOuterSelected: {
-      borderColor: '#08245B',
-    },
+    textAlign: 'right',
 
-    radioInner: {
-      width: 9,
-      height: 9,
+    fontSize: 9,
 
-      borderRadius: 5,
+    color: '#9CA3AF',
+  },
 
-      backgroundColor:
-        '#08245B',
-    },
+  updateButton: {
+    height: 47,
 
-    statusLabel: {
-      fontSize: 12,
+    marginTop: 22,
 
-      color: '#4B5563',
-    },
+    borderRadius: 8,
 
-    statusLabelSelected: {
-      fontWeight: '700',
+    backgroundColor:
+      '#08245B',
 
-      color: '#08245B',
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
 
-    noteInput: {
-      height: 105,
+    gap: 7,
+  },
 
-      marginTop: 8,
+  updateButtonPressed: {
+    opacity: 0.85,
+  },
 
-      paddingHorizontal: 12,
-      paddingVertical: 11,
+  updateButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
 
-      borderRadius: 8,
+    color: '#FFFFFF',
+  },
 
-      borderWidth: 1,
-      borderColor: '#D1D5DB',
+  notFound: {
+    flex: 1,
 
-      backgroundColor:
-        '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-      fontSize: 12,
+  notFoundText: {
+    marginTop: 10,
 
-      color: '#111827',
-    },
+    fontSize: 14,
 
-    characterCount: {
-      marginTop: 4,
-
-      textAlign: 'right',
-
-      fontSize: 9,
-
-      color: '#9CA3AF',
-    },
-
-    updateButton: {
-      height: 47,
-
-      marginTop: 22,
-
-      borderRadius: 8,
-
-      backgroundColor:
-        '#08245B',
-
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-
-      gap: 7,
-    },
-
-    updateButtonPressed: {
-      opacity: 0.85,
-    },
-
-    updateButtonText: {
-      fontSize: 13,
-      fontWeight: '700',
-
-      color: '#FFFFFF',
-    },
-
-    notFound: {
-      flex: 1,
-
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    notFoundText: {
-      fontSize: 14,
-
-      color: '#6B7280',
-    },
-  });
+    color: '#6B7280',
+  },
+});
