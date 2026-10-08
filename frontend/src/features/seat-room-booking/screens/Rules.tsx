@@ -121,6 +121,8 @@ export default function RulesScreen() {
             type: 'seat',
             date,
             time: params.time ?? '',
+            startTime,
+            endTime,
             duration: params.duration ?? '',
             seats: params.seats ?? '',
           },

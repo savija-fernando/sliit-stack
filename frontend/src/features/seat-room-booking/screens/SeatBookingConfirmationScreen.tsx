@@ -6,9 +6,11 @@ import AppHeader from '@/components/AppHeader';
 
 export default function SeatBookingConfirmationScreen() {
   const router = useRouter();
-  const { date, time, duration, seats } = useLocalSearchParams<{
+  const { date, time, startTime, endTime, duration, seats } = useLocalSearchParams<{
     date?: string;
     time?: string;
+    startTime?: string;
+    endTime?: string;
     duration?: string;
     seats?: string;
   }>();
