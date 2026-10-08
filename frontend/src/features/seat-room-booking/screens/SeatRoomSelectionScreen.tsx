@@ -47,6 +47,15 @@ export default function SeatRoomSelectionScreen() {
       return;
     }
 
+    /*
+     * Room booking: pick a room first, then calendar → available slots.
+     * Seat booking: go straight to date/time filter.
+     */
+    if (selectedType === 'room') {
+      router.push({ pathname: '/study-room-picker' });
+      return;
+    }
+
     router.push({
       pathname: '/date-time-filter',
       params: { type: selectedType },

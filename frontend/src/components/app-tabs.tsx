@@ -103,6 +103,14 @@ export default function AppTabs() {
         name="admin-resources"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="study-room-picker"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="study-room-calendar"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

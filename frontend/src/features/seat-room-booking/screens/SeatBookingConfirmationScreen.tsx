@@ -19,7 +19,7 @@ export default function SeatBookingConfirmationScreen() {
     .filter(Boolean);
 
   const handleDone = () => {
-    router.dismissTo('/seats');
+    router.dismissTo('/reservations');
   };
 
   return (

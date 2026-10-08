@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 
 import AppHeader from '@/components/AppHeader';
+import { createStudyRoomBooking } from '../services/studyRoomPickerService';
 
 type Rule = {
   id: string;
@@ -20,6 +21,13 @@ type Rule = {
 };
 
 const RULES: Rule[] = [
+
+  {
+    id: 'Campus ID',
+    title: 'I accept responsibility for my booking.',
+    detail:
+      'I understand that I should handover the students campus Id for counter and get those IDs when leaving the library. I understand that I am responsible for the space during my reservation and must follow all rules.',
+  },
   {
     id: 'booking',
     title: 'I understand the booking conditions.',
@@ -36,7 +44,7 @@ const RULES: Rule[] = [
     id: 'respect',
     title: 'I agree to keep the space clean and respectful.',
     detail:
-      'I will maintain a quiet, safe environment and avoid disturbing other users.',
+      'I will maintain a quiet, safe environment and avoid disturbing other users.Any food or drink consumption is subject to library rules and regulations.',
   },
   {
     id: 'responsibility',
@@ -44,13 +52,19 @@ const RULES: Rule[] = [
     detail:
       'I understand that I am responsible for the space during my reservation and must follow all rules.',
   },
+
 ];
 
 export default function RulesScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
+    roomId?: string;
+    roomName?: string;
+    roomLocation?: string;
     date?: string;
     time?: string;
+    startTime?: string;
+    endTime?: string;
     duration?: string;
     seats?: string;
   }>();
@@ -70,7 +84,7 @@ export default function RulesScreen() {
     setAccepted((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!allAccepted) {
       Alert.alert(
         'Please review the rules',
@@ -79,15 +93,41 @@ export default function RulesScreen() {
       return;
     }
 
-    router.push({
-      pathname: '/booking-confirmation' as any,
-      params: {
-        date: params.date ?? '',
-        time: params.time ?? '',
-        duration: params.duration ?? '',
-        seats: params.seats ?? '',
-      },
-    });
+    const roomId = params.roomId;
+    const date = params.date;
+    const startTime = params.startTime;
+    const endTime = params.endTime;
+
+    if (!roomId || !date || !startTime || !endTime) {
+      Alert.alert('Booking details missing', 'Please select a room and time again.');
+      return;
+    }
+
+    try {
+      await createStudyRoomBooking(roomId, date, `${startTime}:00`, `${endTime}:00`);
+
+      router.push({
+        pathname: '/booking-confirmation' as any,
+        params: {
+          type: 'room',
+          roomId: roomId,
+          roomName: params.roomName ?? '',
+          date: date,
+          time: params.time ?? '',
+          startTime: startTime,
+          endTime: endTime,
+          duration: params.duration ?? '',
+          seats: params.seats ?? '',
+        },
+      });
+    } catch (err: unknown) {
+      Alert.alert(
+        'Booking failed',
+        err instanceof Error
+          ? err.message
+          : 'Could not create your study room booking.',
+      );
+    }
   };
 
   return (
