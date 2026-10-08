@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 
 import AppHeader from '@/components/AppHeader';
 import BackRow from '../components/BackRow';
@@ -73,12 +74,12 @@ export default function MyWaitingListsScreen() {
     });
   };
 
-  const renderLeaveAction = () => (
-    <View style={styles.leaveAction}>
-      <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
-      <Text style={styles.leaveActionText}>Leave</Text>
-    </View>
-  );
+const renderLeaveAction = () => (
+  <View style={styles.leaveAction}>
+    <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
+    <Text style={styles.leaveActionText}>Leave</Text>
+  </View>
+);
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -118,8 +119,16 @@ export default function MyWaitingListsScreen() {
                 >
                   <View style={styles.card}>
                     <View style={styles.cover}>
-                      <Ionicons name="book" size={30} color="#080B13" />
-                    </View>
+                        {item.book.coverUrl ? (
+                          <Image
+                            source={{ uri: item.book.coverUrl }}
+                            style={styles.coverImage}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <Ionicons name="book" size={30} color="#080B13" />
+                        )}
+                      </View>
 
                     <View style={styles.info}>
                       <Text style={styles.bookTitle} numberOfLines={2}>
@@ -250,6 +259,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  coverImage: {
+  width: '100%',
+  height: '100%',
+  borderRadius: 8,
+},
 
   info: {
     flex: 1,
@@ -360,4 +374,5 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     paddingVertical: 14,
   },
+  
 });

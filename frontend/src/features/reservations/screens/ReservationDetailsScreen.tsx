@@ -1,388 +1,103 @@
-import {
-  useCallback,
-  useState,
-} from 'react';
-
+import React from 'react';
 import {
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-
-import {
-  Ionicons,
-  MaterialCommunityIcons,
-} from '@expo/vector-icons';
-
-import {
-  useFocusEffect,
-  useLocalSearchParams,
-  useRouter,
-  type Href,
-} from 'expo-router';
-
-import AppHeader from '@/components/AppHeader';
-
-import StaffBottomNav from '@/features/dashboard/components/StaffBottomNav';
-
-import {
-  getReservationById,
-} from '@/features/reservations/services/reservationStore';
-
-import type {
-  ReservationRecord,
-  ReservationStatus,
-} from '@/features/reservations/types/reservation';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 export default function ReservationDetailsScreen() {
-  const router = useRouter();
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Pressable onPress={() => router.back()}>
+          <Text style={styles.backButton}>‹ Back</Text>
+        </Pressable>
 
-  const params =
-    useLocalSearchParams<{
-      id?: string;
-    }>();
+        <Text style={styles.pageTitle}>Reservation Details</Text>
 
-  const reservationId =
-    typeof params.id === 'string'
-      ? params.id
-      : '';
+        <View style={styles.card}>
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <Text style={styles.icon}>📘</Text>
+            </View>
 
-  const [
-    reservation,
-    setReservation,
-  ] =
-    useState<
-      ReservationRecord | undefined
-    >(() =>
-      getReservationById(
-        reservationId,
-      ),
-    );
+            <View style={styles.titleArea}>
+              <Text style={styles.title}>Database Systems</Text>
 
-  useFocusEffect(
-    useCallback(() => {
-      setReservation(
-        getReservationById(
-          reservationId,
-        ),
-      );
-    }, [reservationId]),
-  );
+              <Text style={styles.location}>
+                Main Library · Floor 2
+              </Text>
+            </View>
 
-  if (!reservation) {
-    return (
-      <SafeAreaView style={styles.page}>
-        <View style={styles.phoneContainer}>
-          <AppHeader
-            rightAction="profile"
-            sideMenu="staff"
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>Active</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <DetailRow
+            label="Reservation ID"
+            value="RES-1025"
           />
 
-          <View style={styles.notFound}>
-            <Ionicons
-              name="alert-circle-outline"
-              size={44}
-              color="#9CA3AF"
-            />
+          <DetailRow
+            label="Reservation Type"
+            value="Book"
+          />
 
-            <Text style={styles.notFoundTitle}>
-              Reservation not found
-            </Text>
+          <DetailRow
+            label="Reservation Date"
+            value="05 Oct 2026"
+          />
 
-            <Pressable
-              style={
-                styles.backToQueueButton
-              }
-              onPress={() =>
-                router.replace(
-                  '/staff-queues' as Href,
-                )
-              }
-            >
-              <Text
-                style={
-                  styles.backToQueueText
-                }
-              >
-                Back to Queue
-              </Text>
-            </Pressable>
-          </View>
+          <DetailRow
+            label="Collection Deadline"
+            value="06 Oct 2026 · 4:00 PM"
+          />
+
+          <DetailRow
+            label="Location"
+            value="Main Library · Floor 2"
+          />
+
+          <DetailRow
+            label="Status"
+            value="Active"
+          />
         </View>
-      </SafeAreaView>
-    );
-  }
 
-  const isBook =
-    reservation.kind === 'book';
-
-  const statusStyle =
-    getStatusStyle(
-      reservation.status,
-    );
-
-  const handleBackToQueue = () => {
-    router.replace(
-      `/staff-queues?type=${reservation.kind}` as Href,
-    );
-  };
-
-  return (
-    <SafeAreaView style={styles.page}>
-      <View style={styles.phoneContainer}>
-        <AppHeader
-          rightAction="profile"
-          sideMenu="staff"
-        />
-
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={
-            styles.content
-          }
-          showsVerticalScrollIndicator={
-            false
+        <Pressable
+          style={styles.primaryButton}
+          onPress={() =>
+            router.push('/reservations/modify-reservation')
           }
         >
-          <View style={styles.titleRow}>
-            <Pressable
-              onPress={
-                handleBackToQueue
-              }
-              style={styles.backButton}
-              accessibilityRole="button"
-              accessibilityLabel="Back to reservation queue"
-            >
-              <Ionicons
-                name="arrow-back-circle"
-                size={30}
-                color="#111111"
-              />
-            </Pressable>
+          <Text style={styles.primaryButtonText}>
+            Modify Reservation
+          </Text>
+        </Pressable>
 
-            <Text style={styles.pageTitle}>
-              {isBook
-                ? 'Book Reservation Details'
-                : 'Seat Reservation Details'}
-            </Text>
-          </View>
-
-          <View style={styles.resourceCard}>
-            <View
-              style={[
-                styles.resourceIcon,
-                !isBook &&
-                  styles.seatIcon,
-              ]}
-            >
-              {isBook ? (
-                <Ionicons
-                  name="book"
-                  size={32}
-                  color="#FFFFFF"
-                />
-              ) : (
-                <MaterialCommunityIcons
-                  name="seat"
-                  size={34}
-                  color="#FFFFFF"
-                />
-              )}
-            </View>
-
-            <View style={styles.resourceInfo}>
-              <Text
-                style={
-                  styles.resourceTitle
-                }
-              >
-                {reservation.title}
-              </Text>
-
-              {isBook ? (
-                <>
-                  <Text
-                    style={
-                      styles.resourceMeta
-                    }
-                  >
-                    By {reservation.author}
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.resourceMeta
-                    }
-                  >
-                    Published on{' '}
-                    {
-                      reservation.published
-                    }
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Text
-                    style={
-                      styles.resourceMeta
-                    }
-                  >
-                    Location:{' '}
-                    {reservation.author}
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.resourceMeta
-                    }
-                  >
-                    Time Slot:{' '}
-                    {
-                      reservation.published
-                    }
-                  </Text>
-                </>
-              )}
-
-              <View
-                style={[
-                  styles.resourceTypeBadge,
-                  !isBook &&
-                    styles.seatTypeBadge,
-                ]}
-              >
-                <Text
-                  style={
-                    styles.resourceTypeText
-                  }
-                >
-                  {isBook
-                    ? 'Available'
-                    : 'Seat Reservation'}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.detailsCard}>
-            <InfoRow
-              label="Reservation ID"
-              value={reservation.id}
-            />
-
-            <InfoRow
-              label="Student ID"
-              value={
-                reservation.studentId
-              }
-            />
-
-            <InfoRow
-              label="Student Name"
-              value={
-                reservation.studentName
-              }
-            />
-
-            <InfoRow
-              label="Reserved On"
-              value={
-                reservation.reservedOn
-              }
-            />
-
-            <InfoRow
-              label={
-                isBook
-                  ? 'Pick-up Date'
-                  : 'Reservation Date'
-              }
-              value={
-                reservation.pickupDate
-              }
-            />
-
-            <InfoRow
-              label={
-                isBook
-                  ? 'Due Date'
-                  : 'End Time'
-              }
-              value={
-                reservation.dueDate
-              }
-            />
-
-            <View style={styles.statusRow}>
-              <Text style={styles.infoLabel}>
-                Reservation Status
-              </Text>
-
-              <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor:
-                      statusStyle.backgroundColor,
-                  },
-                ]}
-              >
-                <Text
-                  style={
-                    styles.statusText
-                  }
-                >
-                  {statusStyle.label}
-                </Text>
-              </View>
-            </View>
-
-            {reservation.note ? (
-              <InfoRow
-                label="Staff Note"
-                value={reservation.note}
-              />
-            ) : null}
-          </View>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.updateButton,
-              pressed &&
-                styles.updateButtonPressed,
-            ]}
-            onPress={() =>
-              router.push(
-                `/update-reservation?id=${reservation.id}` as Href,
-              )
-            }
-          >
-            <Ionicons
-              name="create-outline"
-              size={19}
-              color="#FFFFFF"
-            />
-
-            <Text
-              style={
-                styles.updateButtonText
-              }
-            >
-              Update Reservation
-            </Text>
-          </Pressable>
-        </ScrollView>
-
-        <StaffBottomNav active="queues" />
-      </View>
+        <Pressable
+          style={styles.cancelButton}
+          onPress={() =>
+            router.push('/reservations/cancel-reservation')
+          }
+        >
+          <Text style={styles.cancelButtonText}>
+            Cancel Reservation
+          </Text>
+        </Pressable>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-function InfoRow({
+function DetailRow({
   label,
   value,
 }: {
@@ -390,307 +105,142 @@ function InfoRow({
   value: string;
 }) {
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>
-        {label}
-      </Text>
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
 
-      <Text style={styles.infoValue}>
-        {value}
-      </Text>
+      <Text style={styles.detailValue}>{value}</Text>
     </View>
   );
 }
 
-function getStatusStyle(
-  status: ReservationStatus,
-) {
-  switch (status) {
-    case 'approved':
-      return {
-        label: 'Approved',
-        backgroundColor: '#16A34A',
-      };
-
-    case 'rejected':
-      return {
-        label: 'Rejected',
-        backgroundColor: '#DC2626',
-      };
-
-    case 'returned':
-      return {
-        label: 'Returned',
-        backgroundColor: '#2563EB',
-      };
-
-    case 'expired':
-      return {
-        label: 'Expired',
-        backgroundColor: '#7C3AED',
-      };
-
-    default:
-      return {
-        label: 'Pending',
-        backgroundColor: '#F59E0B',
-      };
-  }
-}
-
 const styles = StyleSheet.create({
-  page: {
+  container: {
     flex: 1,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-  },
-
-  phoneContainer: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 390,
-    backgroundColor: '#F7F9FC',
-  },
-
-  scrollView: {
-    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
 
   content: {
-    paddingHorizontal: 15,
-    paddingTop: 13,
-    paddingBottom: 25,
-  },
-
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 40,
   },
 
   backButton: {
-    marginRight: 7,
+    color: '#2563EB',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
   },
 
   pageTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111111',
+    fontSize: 25,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 20,
   },
 
-  resourceCard: {
-    padding: 14,
-
-    borderRadius: 10,
-
-    backgroundColor: '#FFFFFF',
-
-    flexDirection: 'row',
-    alignItems: 'center',
-
+  card: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
-
-    shadowColor: '#000000',
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-
-    elevation: 2,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
   },
 
-  resourceIcon: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  iconContainer: {
     width: 48,
-    height: 56,
-
-    borderRadius: 6,
-
-    backgroundColor: '#111827',
-
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-
     marginRight: 12,
   },
 
-  seatIcon: {
-    backgroundColor: '#1F3E72',
+  icon: {
+    fontSize: 24,
   },
 
-  resourceInfo: {
+  titleArea: {
     flex: 1,
   },
 
-  resourceTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#111111',
-  },
-
-  resourceMeta: {
-    marginTop: 3,
-    fontSize: 10,
-    color: '#555555',
-  },
-
-  resourceTypeBadge: {
-    marginTop: 7,
-
-    alignSelf: 'flex-start',
-
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-
-    borderRadius: 4,
-
-    backgroundColor: '#16A34A',
-  },
-
-  seatTypeBadge: {
-    backgroundColor: '#345A9C',
-  },
-
-  resourceTypeText: {
-    fontSize: 8,
+  title: {
+    fontSize: 17,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#111827',
+    marginBottom: 4,
   },
 
-  detailsCard: {
-    marginTop: 18,
-    gap: 9,
-  },
-
-  infoRow: {
-    minHeight: 52,
-
-    paddingHorizontal: 13,
-    paddingVertical: 12,
-
-    borderRadius: 8,
-
-    backgroundColor: '#FFFFFF',
-
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  infoLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#333333',
-  },
-
-  infoValue: {
-    maxWidth: '60%',
-    fontSize: 10,
-    color: '#555555',
-    textAlign: 'right',
-  },
-
-  statusRow: {
-    minHeight: 52,
-
-    paddingHorizontal: 13,
-    paddingVertical: 12,
-
-    borderRadius: 8,
-
-    backgroundColor: '#FFFFFF',
-
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  location: {
+    fontSize: 13,
+    color: '#6B7280',
   },
 
   statusBadge: {
-    minWidth: 72,
-
+    backgroundColor: '#DCFCE7',
+    borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,
-
-    borderRadius: 5,
-
-    alignItems: 'center',
   },
 
   statusText: {
-    fontSize: 9,
+    color: '#166534',
+    fontSize: 12,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
 
-  updateButton: {
-    height: 47,
-
-    marginTop: 18,
-
-    borderRadius: 8,
-
-    backgroundColor: '#08245B',
-
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-
-    gap: 7,
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 18,
   },
 
-  updateButtonPressed: {
-    opacity: 0.85,
+  detailRow: {
+    marginBottom: 16,
   },
 
-  updateButtonText: {
+  detailLabel: {
+    color: '#6B7280',
     fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    marginBottom: 4,
   },
 
-  notFound: {
-    flex: 1,
+  detailValue: {
+    color: '#111827',
+    fontSize: 15,
+    fontWeight: '600',
+  },
 
+  primaryButton: {
+    backgroundColor: '#2563EB',
+    borderRadius: 12,
+    paddingVertical: 15,
     alignItems: 'center',
-    justifyContent: 'center',
-
-    paddingHorizontal: 20,
+    marginBottom: 12,
   },
 
-  notFoundTitle: {
-    marginTop: 10,
-
+  primaryButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-
-    color: '#4B5563',
   },
 
-  backToQueueButton: {
-    marginTop: 18,
-
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-
-    borderRadius: 7,
-
-    backgroundColor: '#08245B',
+  cancelButton: {
+    backgroundColor: '#FEE2E2',
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
   },
 
-  backToQueueText: {
-    color: '#FFFFFF',
-
-    fontSize: 12,
+  cancelButtonText: {
+    color: '#B91C1C',
+    fontSize: 16,
     fontWeight: '700',
   },
 });
