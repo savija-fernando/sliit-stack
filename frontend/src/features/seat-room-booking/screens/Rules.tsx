@@ -13,6 +13,7 @@ import {
 
 import AppHeader from '@/components/AppHeader';
 import { createStudyRoomBooking } from '../services/studyRoomPickerService';
+import { createSeatBookings } from '../services/seatBookingService';
 
 type Rule = {
   id: string;
@@ -58,6 +59,7 @@ const RULES: Rule[] = [
 export default function RulesScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
+    type?: string;
     roomId?: string;
     roomName?: string;
     roomLocation?: string;
@@ -67,13 +69,12 @@ export default function RulesScreen() {
     endTime?: string;
     duration?: string;
     seats?: string;
+    seatIds?: string;
   }>();
-  const [accepted, setAccepted] = useState<Record<string, boolean>>({
-    booking: false,
-    arrival: false,
-    respect: false,
-    responsibility: false,
-  });
+  const [accepted, setAccepted] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(RULES.map((rule) => [rule.id, false])),
+  );
+  const [submitting, setSubmitting] = useState(false);
 
   const allAccepted = useMemo(
     () => Object.values(accepted).every(Boolean),
@@ -85,6 +86,7 @@ export default function RulesScreen() {
   };
 
   const handleContinue = async () => {
+    if (submitting) return;
     if (!allAccepted) {
       Alert.alert(
         'Please review the rules',
@@ -93,17 +95,52 @@ export default function RulesScreen() {
       return;
     }
 
-    const roomId = params.roomId;
-    const date = params.date;
-    const startTime = params.startTime;
-    const endTime = params.endTime;
-
-    if (!roomId || !date || !startTime || !endTime) {
-      Alert.alert('Booking details missing', 'Please select a room and time again.');
-      return;
-    }
-
+    setSubmitting(true);
     try {
+      if (params.type === 'seat') {
+        const date = params.date;
+        const startTime = params.startTime;
+        const endTime = params.endTime;
+        const seatIds = (params.seatIds ?? '')
+          .split(',')
+          .map((seatId) => seatId.trim())
+          .filter(Boolean);
+
+        if (!date || !startTime || !endTime || seatIds.length === 0) {
+          Alert.alert(
+            'Booking details missing',
+            'Please select a date, time, and seat again.',
+          );
+          return;
+        }
+
+        await createSeatBookings({ seatIds, date, startTime, endTime });
+        router.push({
+          pathname: '/booking-confirmation' as any,
+          params: {
+            type: 'seat',
+            date,
+            time: params.time ?? '',
+            duration: params.duration ?? '',
+            seats: params.seats ?? '',
+          },
+        });
+        return;
+      }
+
+      const roomId = params.roomId;
+      const date = params.date;
+      const startTime = params.startTime;
+      const endTime = params.endTime;
+
+      if (!roomId || !date || !startTime || !endTime) {
+        Alert.alert(
+          'Booking details missing',
+          'Please select a room and time again.',
+        );
+        return;
+      }
+
       await createStudyRoomBooking(roomId, date, `${startTime}:00`, `${endTime}:00`);
 
       router.push({
@@ -127,6 +164,8 @@ export default function RulesScreen() {
           ? err.message
           : 'Could not create your study room booking.',
       );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -204,11 +243,12 @@ export default function RulesScreen() {
         </View>
 
         <Pressable
-          disabled={!allAccepted}
+          disabled={!allAccepted || submitting}
           onPress={handleContinue}
           style={({ pressed }) => [
             styles.continueButton,
             !allAccepted && styles.continueButtonDisabled,
+            submitting && styles.continueButtonDisabled,
             pressed && allAccepted && styles.continueButtonPressed,
           ]}
         >

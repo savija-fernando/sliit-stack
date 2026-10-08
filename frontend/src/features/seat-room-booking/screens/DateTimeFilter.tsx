@@ -14,11 +14,8 @@ import { Calendar, DateData } from 'react-native-calendars';
 import AppHeader from '@/components/AppHeader';
 
 const TIME_SLOTS = [
-  { label: '08:00 AM-10:00 AM' },
-  { label: '10:00 AM-12:00 PM' },
-  { label: '12:00 PM-02:00 PM' },
-  { label: '02:00 PM-04:00 PM' },
-  { label: '04:00 PM-06:00 PM' }
+  { label: '08:00 AM-12:00 AM', start: '08:00', end: '12:00' },
+  { label: '12:00 AM-4:00 PM', start: '10:00', end: '12:00' },
 ];
 
 /*
@@ -39,28 +36,6 @@ function getTodayString() {
   return getDateString(new Date());
 }
 
-/*
- * Existing bookable date data
- * DO NOT CHANGE
- */
-function getBookableDates() {
-  const dates: string[] = [];
-
-  const availableDayOffsets = [1, 2, 4, 5, 7, 8, 10, 12, 14];
-
-  const today = new Date();
-
-  availableDayOffsets.forEach((offset) => {
-    const date = new Date(today);
-
-    date.setDate(today.getDate() + offset);
-
-    dates.push(getDateString(date));
-  });
-
-  return dates;
-}
-
 export default function DateTimeSelectionScreen() {
   const router = useRouter();
 
@@ -69,11 +44,9 @@ export default function DateTimeSelectionScreen() {
   /*
    * Date
    */
-  const today = getTodayString();
+   const today = getTodayString();
 
-  const bookableDates = getBookableDates();
-
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   /*
    * Time
@@ -102,25 +75,6 @@ export default function DateTimeSelectionScreen() {
   } = {};
 
   /*
-   * Disable today
-   */
-  markedDates[today] = {
-    disabled: true,
-    disableTouchEvent: true,
-  };
-
-  /*
-   * Mark available dates
-   */
-  bookableDates.forEach((date) => {
-    markedDates[date] = {
-      marked: true,
-      dotColor: '#2563EB',
-      disabled: false,
-    };
-  });
-
-  /*
    * Highlight selected date
    */
   if (selectedDate) {
@@ -136,10 +90,10 @@ export default function DateTimeSelectionScreen() {
    * When user selects a date
    */
   const handleDateSelect = (day: DateData) => {
-    if (!bookableDates.includes(day.dateString)) {
+    if (day.dateString < today) {
       Alert.alert(
         'Date unavailable',
-        'Please select one of the available dates.',
+        'Please select today or a future date.',
       );
 
       return;
@@ -198,6 +152,9 @@ export default function DateTimeSelectionScreen() {
       params: {
         ...routeParams,
         type: 'seat',
+        startTime: TIME_SLOTS.find((slot) => slot.label === selectedTime)?.start,
+        endTime: TIME_SLOTS.find((slot) => slot.label === selectedTime)?.end,
+        duration: '2 hours',
       },
     });
   };
@@ -247,7 +204,7 @@ export default function DateTimeSelectionScreen() {
           <View style={styles.calendarCard}>
             <Calendar
               minDate={today}
-              current={selectedDate || bookableDates[0] || today}
+              current={selectedDate || today}
               onDayPress={handleDateSelect}
               markedDates={markedDates}
               enableSwipeMonths={true}
