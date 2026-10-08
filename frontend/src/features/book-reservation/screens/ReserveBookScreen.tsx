@@ -19,6 +19,7 @@ import {
   getBookById,
   isOnWaitingList,
   joinWaitingList,
+  reserveBook,
 } from '../services/bookService';
 import type { Book } from '../types/book';
 
@@ -82,17 +83,20 @@ export default function ReserveBookScreen() {
 
   const canPress = isIssued || canReserve;
 
-  const handleReserve = () => {
-    if (!book || !canReserve) return;
+const handleReserve = async () => {
+  if (!book || !canReserve) return;
 
-    // Connect the Supabase reservation later.
-    const reference = `BR-${Math.floor(1000 + Math.random() * 9000)}`;
+  try {
+    const reference = await reserveBook(book.id);
 
     router.replace({
       pathname: '/books/confirmation',
       params: { reference },
     });
-  };
+  } catch (error) {
+    console.error('Book reservation failed:', error);
+  }
+};
 
   const handleWaitingList = async () => {
     if (!book || !isIssued) return;
