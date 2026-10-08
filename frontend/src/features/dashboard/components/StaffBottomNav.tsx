@@ -52,14 +52,16 @@ export default function StaffBottomNav({
       return;
     }
 
-    // Profile will be connected
-    // when the staff profile screen exists.
+    if (item === 'profile') {
+      router.push(
+        '/staff-profile' as Href,
+      );
+    }
   };
 
   const items: {
     key: StaffNavItem;
     label: string;
-    disabled?: boolean;
   }[] = [
     {
       key: 'dashboard',
@@ -76,7 +78,6 @@ export default function StaffBottomNav({
     {
       key: 'profile',
       label: 'Profile',
-      disabled: true,
     },
   ];
 
@@ -89,7 +90,6 @@ export default function StaffBottomNav({
         return (
           <Pressable
             key={item.key}
-            disabled={item.disabled}
             onPress={() =>
               navigate(item.key)
             }
@@ -99,11 +99,7 @@ export default function StaffBottomNav({
               isActive &&
                 styles.activeItem,
 
-              item.disabled &&
-                styles.disabledItem,
-
               pressed &&
-                !item.disabled &&
                 styles.pressedItem,
             ]}
           >
@@ -113,9 +109,6 @@ export default function StaffBottomNav({
 
                 isActive &&
                   styles.activeText,
-
-                item.disabled &&
-                  styles.disabledText,
               ]}
             >
               {item.label}
@@ -163,10 +156,6 @@ const styles = StyleSheet.create({
     opacity: 0.75,
   },
 
-  disabledItem: {
-    opacity: 0.45,
-  },
-
   text: {
     fontSize: 10,
 
@@ -177,9 +166,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
 
     color: '#334E8A',
-  },
-
-  disabledText: {
-    color: '#94A3B8',
   },
 });

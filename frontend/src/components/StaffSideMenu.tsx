@@ -31,7 +31,9 @@ export default function StaffSideMenu({
 }: StaffSideMenuProps) {
   const router = useRouter();
 
-  const navigate = (route: Href) => {
+  const navigate = (
+    route: Href,
+  ) => {
     onClose();
     router.push(route);
   };
@@ -44,7 +46,6 @@ export default function StaffSideMenu({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        {/* Side panel */}
         <View style={styles.menu}>
           {/* Header */}
           <View style={styles.header}>
@@ -66,8 +67,6 @@ export default function StaffSideMenu({
                 pressed &&
                   styles.buttonPressed,
               ]}
-              accessibilityRole="button"
-              accessibilityLabel="Close menu"
             >
               <Ionicons
                 name="close"
@@ -124,7 +123,11 @@ export default function StaffSideMenu({
             <MenuItem
               icon="person-outline"
               label="Profile"
-              disabled
+              onPress={() =>
+                navigate(
+                  '/staff-profile' as Href,
+                )
+              }
             />
           </View>
 
@@ -141,7 +144,9 @@ export default function StaffSideMenu({
                 styles.buttonPressed,
             ]}
             onPress={() =>
-              navigate('/login' as Href)
+              navigate(
+                '/login' as Href,
+              )
             }
           >
             <Ionicons
@@ -156,7 +161,6 @@ export default function StaffSideMenu({
           </Pressable>
         </View>
 
-        {/* Close menu by pressing outside */}
         <Pressable
           style={styles.backdrop}
           onPress={onClose}

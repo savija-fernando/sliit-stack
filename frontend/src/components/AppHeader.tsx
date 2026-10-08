@@ -10,10 +10,16 @@ import {
   View,
 } from 'react-native';
 
+import {
+  useRouter,
+  type Href,
+} from 'expo-router';
+
 import StaffSideMenu from '@/components/StaffSideMenu';
 
 type AppHeaderProps = {
   onMenuPress?: () => void;
+
   onProfilePress?: () => void;
 
   rightAction?:
@@ -35,6 +41,8 @@ export default function AppHeader({
   onNotificationsPress,
   sideMenu,
 }: AppHeaderProps) {
+  const router = useRouter();
+
   const [
     staffMenuVisible,
     setStaffMenuVisible,
@@ -43,10 +51,29 @@ export default function AppHeader({
   const handleMenuPress = () => {
     if (sideMenu === 'staff') {
       setStaffMenuVisible(true);
+
       return;
     }
 
     onMenuPress?.();
+  };
+
+  const handleProfilePress = () => {
+    // If a screen supplied its own profile action,
+    // use that first.
+    if (onProfilePress) {
+      onProfilePress();
+
+      return;
+    }
+
+    // Staff screens automatically open
+    // the staff profile.
+    if (sideMenu === 'staff') {
+      router.push(
+        '/staff-profile' as Href,
+      );
+    }
   };
 
   return (
@@ -115,8 +142,7 @@ export default function AppHeader({
                     styles.badgeText
                   }
                 >
-                  {notificationCount >
-                  9
+                  {notificationCount > 9
                     ? '9+'
                     : notificationCount}
                 </Text>
@@ -125,7 +151,9 @@ export default function AppHeader({
           </Pressable>
         ) : (
           <Pressable
-            onPress={onProfilePress}
+            onPress={
+              handleProfilePress
+            }
             style={({ pressed }) => [
               styles.iconButton,
 
@@ -148,7 +176,9 @@ export default function AppHeader({
       {/* Staff side menu */}
       {sideMenu === 'staff' && (
         <StaffSideMenu
-          visible={staffMenuVisible}
+          visible={
+            staffMenuVisible
+          }
           onClose={() =>
             setStaffMenuVisible(false)
           }
