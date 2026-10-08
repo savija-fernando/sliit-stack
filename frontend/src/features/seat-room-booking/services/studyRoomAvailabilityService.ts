@@ -21,6 +21,7 @@ function toMinutes(value: unknown): number | null {
   if (hours > 23 || minutes > 59) return null;
 
   return hours * 60 + minutes;
+
 }
 
 function parseRequestedTime(time: string, duration: string) {
