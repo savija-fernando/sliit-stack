@@ -64,8 +64,7 @@ export default function HomeScreen() {
       <AppHeader
         rightAction="notifications"
         notificationCount={data?.unreadCount ?? 0}
-        // Open the notifications screen here once it exists
-        onNotificationsPress={() => {}}
+        onNotificationsPress={() => router.navigate('/notifications')}
       />
 
       {loading || !data ? (
@@ -137,8 +136,7 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <SectionHeader
               title="Notifications"
-              // Open the notifications screen here once it exists
-              onSeeAll={() => {}}
+              onSeeAll={() => router.navigate('/notifications')}
             />
 
             <View style={styles.list}>

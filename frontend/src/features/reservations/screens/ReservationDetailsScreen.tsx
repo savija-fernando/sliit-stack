@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -7,9 +10,114 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import {
+  getReservationById,
+  Reservation,
+} from '../services/reservationService';
 
 export default function ReservationDetailsScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+
+  const [reservation, setReservation] =
+    useState<Reservation | null>(null);
+
+  const [loading, setLoading] = useState(true);
+
+  const loadReservation = async () => {
+    try {
+      setLoading(true);
+
+      if (!id) {
+        throw new Error('Reservation ID is missing.');
+      }
+
+      const data = await getReservationById(id);
+
+      if (!data) {
+        Alert.alert(
+          'Reservation Not Found',
+          'This reservation could not be found.'
+        );
+        return;
+      }
+
+      setReservation(data);
+    } catch (error) {
+      console.error('Failed to load reservation:', error);
+
+      Alert.alert(
+        'Error',
+        error instanceof Error
+          ? error.message
+          : 'Failed to load reservation.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadReservation();
+    }, [id])
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>
+            Loading reservation...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!reservation) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>
+            Reservation not found
+          </Text>
+
+          <Pressable
+            style={styles.primaryButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.primaryButtonText}>
+              Go Back
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const bookTitle =
+    reservation.book?.title ?? 'Book Reservation';
+
+  const bookLocation =
+    reservation.book?.location ?? 'Main Library';
+
+  const reservationType =
+    reservation.reservationType === 'BOOK'
+      ? 'Book'
+      : reservation.reservationType === 'SEAT'
+        ? 'Seat'
+        : 'Room';
+
+  const formattedDate = new Date(
+    reservation.reservedAt
+  ).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -17,24 +125,49 @@ export default function ReservationDetailsScreen() {
           <Text style={styles.backButton}>‹ Back</Text>
         </Pressable>
 
-        <Text style={styles.pageTitle}>Reservation Details</Text>
+        <Text style={styles.pageTitle}>
+          Reservation Details
+        </Text>
 
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>📘</Text>
+              {reservation.book?.coverUrl ? (
+                <Image
+                  source={{ uri: reservation.book.coverUrl }}
+                  style={styles.coverImage}
+                />
+              ) : (
+                <Text style={styles.icon}>📘</Text>
+              )}
             </View>
 
             <View style={styles.titleArea}>
-              <Text style={styles.title}>Database Systems</Text>
+              <Text style={styles.title}>
+                {bookTitle}
+              </Text>
 
               <Text style={styles.location}>
-                Main Library · Floor 2
+                {bookLocation}
               </Text>
             </View>
 
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>Active</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                reservation.status === 'Cancelled' &&
+                  styles.cancelledBadge,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusText,
+                  reservation.status === 'Cancelled' &&
+                    styles.cancelledStatusText,
+                ]}
+              >
+                {reservation.status}
+              </Text>
             </View>
           </View>
 
@@ -42,56 +175,67 @@ export default function ReservationDetailsScreen() {
 
           <DetailRow
             label="Reservation ID"
-            value="RES-1025"
+            value={reservation.reference}
           />
 
           <DetailRow
             label="Reservation Type"
-            value="Book"
+            value={reservationType}
           />
 
           <DetailRow
             label="Reservation Date"
-            value="05 Oct 2026"
-          />
-
-          <DetailRow
-            label="Collection Deadline"
-            value="06 Oct 2026 · 4:00 PM"
+            value={formattedDate}
           />
 
           <DetailRow
             label="Location"
-            value="Main Library · Floor 2"
+            value={bookLocation}
           />
 
           <DetailRow
             label="Status"
-            value="Active"
+            value={reservation.status}
           />
         </View>
 
-        <Pressable
-          style={styles.primaryButton}
-          onPress={() =>
-            router.push('/reservations/modify-reservation')
-          }
-        >
-          <Text style={styles.primaryButtonText}>
-            Modify Reservation
-          </Text>
-        </Pressable>
+        {reservation.status === 'Active' && (
+          <>
+            <Pressable
+              style={styles.primaryButton}
+              onPress={() =>
+                router.push({
+                  pathname:
+                    '/reservations/modify-reservation',
+                  params: {
+                    id: reservation.id,
+                  },
+                })
+              }
+            >
+              <Text style={styles.primaryButtonText}>
+                Modify Reservation
+              </Text>
+            </Pressable>
 
-        <Pressable
-          style={styles.cancelButton}
-          onPress={() =>
-            router.push('/reservations/cancel-reservation')
-          }
-        >
-          <Text style={styles.cancelButtonText}>
-            Cancel Reservation
-          </Text>
-        </Pressable>
+            <Pressable
+              style={styles.cancelButton}
+              onPress={() =>
+                router.push({
+                  pathname:
+                    '/reservations/cancel-reservation',
+                  params: {
+                    id: reservation.id,
+                  },
+                })
+              }
+            >
+              <Text style={styles.cancelButtonText}>
+                Cancel Reservation
+              </Text>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -125,6 +269,32 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  loadingText: {
+    marginTop: 12,
+    color: '#6B7280',
+    fontSize: 14,
+  },
+
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 20,
+  },
+
   backButton: {
     color: '#2563EB',
     fontSize: 16,
@@ -151,6 +321,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+
+  coverImage: {
+  width: '100%',
+  height: '100%',
+  borderRadius: 12,
+  resizeMode: 'cover',
+},
 
   iconContainer: {
     width: 48,
@@ -189,10 +366,18 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
 
+  cancelledBadge: {
+    backgroundColor: '#FEE2E2',
+  },
+
   statusText: {
     color: '#166534',
     fontSize: 12,
     fontWeight: '700',
+  },
+
+  cancelledStatusText: {
+    color: '#B91C1C',
   },
 
   divider: {

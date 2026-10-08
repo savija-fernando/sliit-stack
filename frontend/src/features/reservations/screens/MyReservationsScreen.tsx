@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
@@ -7,98 +8,74 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import {
+  GestureHandlerRootView,
+  Swipeable,
+} from 'react-native-gesture-handler';
 
-type ReservationType = 'Book' | 'Seat';
-
-type ReservationStatus = 'Active' | 'Upcoming' | 'Expired';
-
-type Reservation = {
-  id: string;
-  title: string;
-  type: ReservationType;
-  date: string;
-  location: string;
-  status: ReservationStatus;
-};
-
-const reservations: Reservation[] = [
-  {
-    id: '1',
-    title: 'Database Systems',
-    type: 'Book',
-    date: '05 Oct 2026',
-    location: 'Main Library · Floor 2',
-    status: 'Active',
-  },
-  {
-    id: '2',
-    title: 'Reading Room Seat A12',
-    type: 'Seat',
-    date: '06 Oct 2026',
-    location: 'Reading Room · Level 1',
-    status: 'Upcoming',
-  },
-  {
-    id: '3',
-    title: 'Human Computer Interaction',
-    type: 'Book',
-    date: '08 Oct 2026',
-    location: 'Main Library · Floor 1',
-    status: 'Active',
-  },
-  {
-    id: '4',
-    title: 'Reading Room Seat B07',
-    type: 'Seat',
-    date: '01 Oct 2026',
-    location: 'Reading Room · Level 2',
-    status: 'Expired',
-  },
-];
+import { getMyReservations } from '../services/reservationService';
+import type { Reservation } from '../services/reservationService';
 
 export default function MyReservationsScreen() {
   const [selectedTab, setSelectedTab] = useState<
     'All' | 'Books' | 'Seats'
   >('All');
 
-  const filteredReservations = reservations.filter((reservation) => {
-    if (selectedTab === 'All') {
-      return true;
-    }
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    if (selectedTab === 'Books') {
-      return reservation.type === 'Book';
-    }
+  // IDs of cancelled reservations the user has swiped away
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
 
-    return reservation.type === 'Seat';
-  });
-
-  const getStatusBackground = (status: ReservationStatus) => {
-    if (status === 'Active') {
-      return styles.activeStatus;
-    }
-
-    if (status === 'Upcoming') {
-      return styles.upcomingStatus;
-    }
-
-    return styles.expiredStatus;
+  const handleRemove = (id: string) => {
+    setDismissedIds((prev) =>
+      prev.includes(id) ? prev : [...prev, id]
+    );
+    // Optional: call your backend here so it stays removed permanently
+    // await deleteReservation(id);
   };
 
-  const getStatusText = (status: ReservationStatus) => {
-    if (status === 'Active') {
-      return styles.activeStatusText;
-    }
+  const loadReservations = useCallback(async () => {
+    try {
+      setLoading(true);
 
-    if (status === 'Upcoming') {
-      return styles.upcomingStatusText;
-    }
+      const result = await getMyReservations();
 
-    return styles.expiredStatusText;
-  };
+      setReservations(result);
+    } catch (error) {
+      console.error('Failed to load reservations:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadReservations();
+    }, [loadReservations])
+  );
+
+  const filteredReservations = reservations.filter(
+    (reservation) => {
+      if (selectedTab === 'All') {
+        return true;
+      }
+
+      if (selectedTab === 'Books') {
+        return reservation.reservationType === 'BOOK';
+      }
+
+      return reservation.reservationType === 'SEAT';
+    }
+  );
+
+  const visibleReservations = filteredReservations.filter(
+    (reservation) => !dismissedIds.includes(reservation.id)
+  );
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.content}>
         <Text style={styles.title}>My Reservations</Text>
@@ -107,6 +84,7 @@ export default function MyReservationsScreen() {
           View and manage your current book and seat reservations.
         </Text>
 
+        {/* Filter tabs */}
         <View style={styles.tabs}>
           {(['All', 'Books', 'Seats'] as const).map((tab) => (
             <Pressable
@@ -129,6 +107,7 @@ export default function MyReservationsScreen() {
           ))}
         </View>
 
+        {/* Waiting List */}
         <Pressable
           style={styles.waitingListButton}
           onPress={() =>
@@ -148,78 +127,167 @@ export default function MyReservationsScreen() {
           <Text style={styles.arrow}>›</Text>
         </Pressable>
 
-        <FlatList
-          data={filteredReservations}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [
-                styles.card,
-                pressed && styles.cardPressed,
-              ]}
-              onPress={() =>
-                router.push('/reservations/reservation-details')
-              }
-            >
-              <View style={styles.cardTop}>
-                <View style={styles.typeBadge}>
-                  <Text style={styles.typeText}>{item.type}</Text>
-                </View>
+        {/* Reservations */}
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#2563EB"
+            style={styles.loader}
+          />
+        ) : (
+          <FlatList
+            data={visibleReservations}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => {
+              const isBook =
+                item.reservationType === 'BOOK';
 
-                <View
-                  style={[
-                    styles.statusBadge,
-                    getStatusBackground(item.status),
+              const title = isBook
+                ? item.book?.title ?? 'Book reservation'
+                : item.seatId
+                  ? 'Seat reservation'
+                  : item.roomId
+                    ? 'Room reservation'
+                    : 'Reservation';
+
+              const location = isBook
+                ? item.book?.location ?? 'Library'
+                : 'Reservation location';
+
+              const typeLabel = isBook
+                ? 'Book'
+                : item.reservationType === 'SEAT'
+                  ? 'Seat'
+                  : 'Room';
+
+              const status = item.status;
+
+              const isCancelled =
+                String(status).toLowerCase() === 'cancelled' ||
+                String(status).toLowerCase() === 'canceled';
+
+              const card = (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.card,
+                    pressed && styles.cardPressed,
                   ]}
+                  onPress={() =>
+                    router.push({
+                      pathname:
+                        '/reservations/reservation-details',
+                      params: {
+                        id: item.id,
+                      },
+                    })
+                  }
                 >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      getStatusText(item.status),
-                    ]}
-                  >
-                    {item.status}
+                  {/* Type + Status */}
+                  <View style={styles.cardTop}>
+                    <View style={styles.typeBadge}>
+                      <Text style={styles.typeText}>
+                        {typeLabel}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        status === 'Active'
+                          ? styles.activeStatus
+                          : styles.expiredStatus,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          status === 'Active'
+                            ? styles.activeStatusText
+                            : styles.expiredStatusText,
+                        ]}
+                      >
+                        {status}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Reservation title */}
+                  <Text style={styles.cardTitle}>
+                    {title}
                   </Text>
-                </View>
-              </View>
 
-              <Text style={styles.cardTitle}>{item.title}</Text>
+                  {/* Location */}
+                  <Text style={styles.location}>
+                    {location}
+                  </Text>
 
-              <Text style={styles.location}>{item.location}</Text>
+                  {/* Reference */}
+                  <View style={styles.dateContainer}>
+                    <Text style={styles.smallLabel}>
+                      Reservation reference
+                    </Text>
 
-              <View style={styles.dateContainer}>
-                <Text style={styles.smallLabel}>
-                  Reservation date
+                    <Text style={styles.dateText}>
+                      {item.reference}
+                    </Text>
+                  </View>
+
+                  {/* Footer */}
+                  <View style={styles.cardFooter}>
+                    <Text style={styles.viewDetails}>
+                      View Details
+                    </Text>
+
+                    <Text style={styles.detailsArrow}>
+                      ›
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+
+              // Only cancelled reservations can be swiped away
+              if (!isCancelled) {
+                return card;
+              }
+
+              return (
+                <Swipeable
+                  overshootRight={false}
+                  onSwipeableOpen={() => handleRemove(item.id)}
+                  renderRightActions={() => (
+                    <Pressable
+                      style={styles.removeAction}
+                      onPress={() => handleRemove(item.id)}
+                    >
+                      <Text style={styles.removeText}>
+                        Remove
+                      </Text>
+                    </Pressable>
+                  )}
+                >
+                  {card}
+                </Swipeable>
+              );
+            }}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyTitle}>
+                  No reservations found
                 </Text>
 
-                <Text style={styles.dateText}>{item.date}</Text>
-              </View>
-
-              <View style={styles.cardFooter}>
-                <Text style={styles.viewDetails}>
-                  View Details
+                <Text style={styles.emptyText}>
+                  You currently have no reservations in this
+                  category.
                 </Text>
-
-                <Text style={styles.detailsArrow}>›</Text>
               </View>
-            </Pressable>
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>
-                No reservations found
-              </Text>
-
-              <Text style={styles.emptyText}>
-                You currently have no reservations in this category.
-              </Text>
-            </View>
-          }
-        />
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -310,6 +378,10 @@ const styles = StyleSheet.create({
     color: '#2563EB',
   },
 
+  loader: {
+    marginTop: 40,
+  },
+
   list: {
     paddingBottom: 30,
   },
@@ -356,10 +428,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
   },
 
-  upcomingStatus: {
-    backgroundColor: '#FEF3C7',
-  },
-
   expiredStatus: {
     backgroundColor: '#FEE2E2',
   },
@@ -371,10 +439,6 @@ const styles = StyleSheet.create({
 
   activeStatusText: {
     color: '#166534',
-  },
-
-  upcomingStatusText: {
-    color: '#92400E',
   },
 
   expiredStatusText: {
@@ -448,5 +512,21 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+
+  removeAction: {
+    backgroundColor: '#DC2626',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 90,
+    borderRadius: 16,
+    marginBottom: 14,
+    marginLeft: 8,
+  },
+
+  removeText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

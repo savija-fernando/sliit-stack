@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Image } from 'react-native';
 import {
   ActivityIndicator,
@@ -10,7 +10,11 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
 
 import AppHeader from '@/components/AppHeader';
 import { searchBooks } from '../services/bookService';
@@ -32,23 +36,39 @@ export default function BookResultsScreen() {
   const [results, setResults] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useFocusEffect(
+  useCallback(() => {
     let cancelled = false;
-    setLoading(true);
 
-    searchBooks({ search, genre })
-      .then((books) => {
-        if (!cancelled) setResults(books);
-      })
-      .catch((error) => console.error('Book search failed:', error))
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const loadBooks = async () => {
+      try {
+        setLoading(true);
+
+        const books = await searchBooks({
+          search,
+          genre,
+        });
+
+        if (!cancelled) {
+          setResults(books);
+        }
+      } catch (error) {
+        console.error('Book search failed:', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadBooks();
 
     return () => {
       cancelled = true;
     };
-  }, [search, genre]);
+  }, [search, genre])
+);
+
 
   return (
     <SafeAreaView style={styles.container}>

@@ -438,59 +438,15 @@ export async function reserveBook(bookId: string): Promise<string> {
     throw new Error('You must be logged in to reserve a book.');
   }
 
-  // Check the current book status first.
-  const { data: book, error: bookError } = await supabase
-    .from('books')
-    .select('id, status, available_copies')
-    .eq('id', bookId)
-    .single();
+  const { data, error } = await supabase.rpc('reserve_book', {
+    p_book_id: bookId,
+  });
 
-  if (bookError) {
+  if (error) {
     throw new Error(
-      `Failed to check book availability: ${bookError.message}`
+      `Failed to reserve book: ${error.message}`
     );
   }
 
-  if (book.status !== 'Available' || book.available_copies <= 0) {
-    throw new Error('This book is no longer available.');
-  }
-
-  const reference = `BR-${Math.floor(1000 + Math.random() * 9000)}`;
-
-  // Create the reservation.
-  const { error: reservationError } = await supabase
-    .from('reservations')
-    .insert({
-      user_id: user.id,
-      reservation_type: 'BOOK',
-      book_id: bookId,
-      seat_id: null,
-      room_id: null,
-      reference,
-      status: 'Active',
-    });
-
-  if (reservationError) {
-    throw new Error(
-      `Failed to create reservation: ${reservationError.message}`
-    );
-  }
-
-  // Mark the book as reserved.
-  const { error: updateError } = await supabase
-    .from('books')
-    .update({
-      status: 'Reserved',
-      available_copies: 0,
-    })
-    .eq('id', bookId)
-    .eq('status', 'Available');
-
-  if (updateError) {
-    throw new Error(
-      `Reservation created, but failed to update book: ${updateError.message}`
-    );
-  }
-
-  return reference;
+  return data;
 }

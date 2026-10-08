@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -9,10 +10,54 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+
+import {
+  cancelReservation,
+  getReservationById,
+  Reservation,
+} from '../services/reservationService';
 
 export default function CancelReservationScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+
+  const [reservation, setReservation] =
+    useState<Reservation | null>(null);
+
   const [reason, setReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+
+  const loadReservation = async () => {
+    try {
+      if (!id) {
+        throw new Error('Reservation ID is missing.');
+      }
+
+      const data = await getReservationById(id);
+
+      if (!data) {
+        throw new Error('Reservation not found.');
+      }
+
+      setReservation(data);
+    } catch (error) {
+      console.error(
+        'Failed to load reservation:',
+        error
+      );
+
+      Alert.alert(
+        'Error',
+        error instanceof Error
+          ? error.message
+          : 'Failed to load reservation.'
+      );
+    }
+  };
+
+  React.useEffect(() => {
+    loadReservation();
+  }, [id]);
 
   const handleCancel = () => {
     Alert.alert(
@@ -26,44 +71,102 @@ export default function CancelReservationScreen() {
         {
           text: 'Cancel Reservation',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert(
-              'Reservation Cancelled',
-              'Your reservation has been cancelled successfully.',
-              [
-                {
-                  text: 'OK',
-                  onPress: () =>
-                    router.replace('/reservations'),
-                },
-              ]
-            );
-          },
+          onPress: confirmCancellation,
         },
       ]
     );
   };
 
+const confirmCancellation = async () => {
+  console.log('🔥 CANCEL BUTTON PRESSED');
+
+  if (!reservation) {
+    console.log('❌ NO RESERVATION');
+    Alert.alert(
+      'Error',
+      'Reservation information is not available.'
+    );
+    return;
+  }
+
+  try {
+    console.log('🔥 Calling cancelReservation:', reservation.id);
+
+    setCancelling(true);
+
+    await cancelReservation(reservation.id);
+
+    console.log('✅ cancelReservation finished');
+
+    Alert.alert(
+      'Reservation Cancelled',
+      'Your reservation has been cancelled successfully.',
+      [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.replace('/reservations');
+          },
+        },
+      ]
+    );
+  } catch (error) {
+    console.error('❌ CANCEL ERROR:', error);
+
+    Alert.alert(
+      'Cancellation Failed',
+      error instanceof Error
+        ? error.message
+        : 'Failed to cancel reservation.'
+    );
+  } finally {
+    setCancelling(false);
+  }
+};
+
+  if (!reservation) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator
+            size="large"
+            color="#2563EB"
+          />
+
+          <Text style={styles.loadingText}>
+            Loading reservation...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.backButton}>‹ Back</Text>
+          <Text style={styles.backButton}>
+            ‹ Back
+          </Text>
         </Pressable>
 
-        <Text style={styles.title}>Cancel Reservation</Text>
+        <Text style={styles.title}>
+          Cancel Reservation
+        </Text>
 
         <View style={styles.card}>
           <Text style={styles.bookTitle}>
-            Database Systems
+            {reservation.book?.title ??
+              'Book Reservation'}
           </Text>
 
           <Text style={styles.meta}>
-            Main Library
+            {reservation.book?.location ??
+              'Main Library'}
           </Text>
 
           <Text style={styles.meta}>
-            Reservation ID: RES-1025
+            Reservation ID: {reservation.reference}
           </Text>
         </View>
 
@@ -73,14 +176,17 @@ export default function CancelReservationScreen() {
           </Text>
 
           <Text style={styles.warningText}>
-            Once cancelled, the reserved item will be released
-            for another user. This action cannot be undone.
+            Once cancelled, the reserved item will be
+            released for another user. This action
+            cannot be undone.
           </Text>
         </View>
 
         <Text style={styles.label}>
           Reason for cancellation{' '}
-          <Text style={styles.optional}>(Optional)</Text>
+          <Text style={styles.optional}>
+            (Optional)
+          </Text>
         </Text>
 
         <TextInput
@@ -93,19 +199,30 @@ export default function CancelReservationScreen() {
         />
 
         <Pressable
-          style={styles.cancelButton}
+          style={[
+            styles.cancelButton,
+            cancelling && styles.disabledButton,
+          ]}
           onPress={handleCancel}
+          disabled={cancelling}
         >
-          <Text style={styles.cancelText}>
-            Cancel Reservation
-          </Text>
+          {cancelling ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.cancelText}>
+              Cancel Reservation
+            </Text>
+          )}
         </Pressable>
 
         <Pressable
           style={styles.goBackButton}
           onPress={() => router.back()}
+          disabled={cancelling}
         >
-          <Text style={styles.goBackText}>Go Back</Text>
+          <Text style={styles.goBackText}>
+            Go Back
+          </Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -122,6 +239,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 40,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  loadingText: {
+    marginTop: 12,
+    color: '#6B7280',
+    fontSize: 14,
   },
 
   backButton: {
@@ -210,6 +339,10 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     marginBottom: 12,
+  },
+
+  disabledButton: {
+    opacity: 0.6,
   },
 
   cancelText: {

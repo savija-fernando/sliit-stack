@@ -13,11 +13,14 @@ export async function testStudentLogin(
 
   if (error) {
     console.error('Login failed:', error.message);
-    return;
+    return false;
   }
 
   console.log('Student login successful!');
   console.log('Signed-in user ID:', data.user.id);
+  console.log('Signed-in email:', data.user.email);
 
   await testBookService();
+
+  return true;
 }
