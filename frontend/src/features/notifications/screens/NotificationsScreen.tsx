@@ -1,65 +1,64 @@
-import React, { useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useMemo,
+  useState,
+} from 'react';
+
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 
-type NotificationItem = {
-  id: string;
-  message: string;
-  time: string;
-  read: boolean;
-};
+import {
+  router,
+  useFocusEffect,
+} from 'expo-router';
 
-const initialNotifications: NotificationItem[] = [
-  {
-    id: '1',
-    message:
-      'Your reservation for Database Systems has been confirmed.',
-    time: '10 minutes ago',
-    read: false,
-  },
-  {
-    id: '2',
-    message:
-      'Operating System Concepts is now available. You are first on the waiting list.',
-    time: '1 hour ago',
-    read: false,
-  },
-  {
-    id: '3',
-    message:
-      'Reminder: collect your reserved book before 4:00 PM tomorrow.',
-    time: '3 hours ago',
-    read: false,
-  },
-  {
-    id: '4',
-    message:
-      'Your Reading Room Seat A12 reservation is scheduled for 06 Oct 2026.',
-    time: 'Yesterday',
-    read: true,
-  },
-  {
-    id: '5',
-    message:
-      'Your previous reservation has expired.',
-    time: '02 Oct 2026',
-    read: true,
-  },
-];
+import {
+  getMyNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from '../services/notificationService';
+
+import type { NotificationItem } from '../services/notificationService';
 
 export default function NotificationsScreen() {
   const [filter, setFilter] =
     useState<'Unread' | 'All'>('Unread');
 
   const [notifications, setNotifications] =
-    useState(initialNotifications);
+    useState<NotificationItem[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const result = await getMyNotifications();
+
+      setNotifications(result);
+    } catch (error) {
+      console.error(
+        'Failed to load notifications:',
+        error
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadNotifications();
+    }, [loadNotifications])
+  );
 
   const visibleNotifications = useMemo(() => {
     if (filter === 'All') {
@@ -71,26 +70,44 @@ export default function NotificationsScreen() {
     );
   }, [filter, notifications]);
 
-  const markAsRead = (id: string) => {
-    setNotifications((current) =>
-      current.map((notification) =>
-        notification.id === id
-          ? {
-              ...notification,
-              read: true,
-            }
-          : notification
-      )
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      await markNotificationAsRead(id);
+
+      setNotifications((current) =>
+        current.map((notification) =>
+          notification.id === id
+            ? {
+                ...notification,
+                read: true,
+              }
+            : notification
+        )
+      );
+    } catch (error) {
+      console.error(
+        'Failed to mark notification as read:',
+        error
+      );
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((current) =>
-      current.map((notification) => ({
-        ...notification,
-        read: true,
-      }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+
+      setNotifications((current) =>
+        current.map((notification) => ({
+          ...notification,
+          read: true,
+        }))
+      );
+    } catch (error) {
+      console.error(
+        'Failed to mark all notifications as read:',
+        error
+      );
+    }
   };
 
   return (
@@ -136,56 +153,85 @@ export default function NotificationsScreen() {
           ))}
         </View>
 
-        <FlatList
-          data={visibleNotifications}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <Pressable
-              style={[
-                styles.notificationCard,
-                !item.read && styles.unreadCard,
-              ]}
-              onPress={() => markAsRead(item.id)}
-            >
-              <View style={styles.notificationRow}>
-                <View style={styles.dotArea}>
-                  {!item.read && <View style={styles.unreadDot} />}
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#2563EB"
+            style={{ marginTop: 40 }}
+          />
+        ) : (
+          <FlatList
+            data={visibleNotifications}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <Pressable
+                style={[
+                  styles.notificationCard,
+                  !item.read && styles.unreadCard,
+                ]}
+                onPress={() => markAsRead(item.id)}
+              >
+                <View style={styles.notificationRow}>
+                  <View style={styles.dotArea}>
+                    {!item.read && (
+                      <View style={styles.unreadDot} />
+                    )}
+                  </View>
+
+                  <View style={styles.messageArea}>
+                    <Text
+                      style={[
+                        styles.message,
+                        !item.read && styles.unreadMessage,
+                      ]}
+                    >
+                      {item.message}
+                    </Text>
+
+                    <Text style={styles.time}>
+                      {formatNotificationTime(item.createdAt)}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.arrow}>›</Text>
                 </View>
+              </Pressable>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyTitle}>
+                  {filter === 'Unread'
+                    ? "You're all caught up"
+                    : 'No notifications'}
+                </Text>
 
-                <View style={styles.messageArea}>
-                  <Text
-                    style={[
-                      styles.message,
-                      !item.read && styles.unreadMessage,
-                    ]}
-                  >
-                    {item.message}
-                  </Text>
-
-                  <Text style={styles.time}>{item.time}</Text>
-                </View>
-
-                <Text style={styles.arrow}>›</Text>
+                <Text style={styles.emptyText}>
+                  {filter === 'Unread'
+                    ? 'You have no unread notifications.'
+                    : 'You have no notifications yet.'}
+                </Text>
               </View>
-            </Pressable>
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>
-                You're all caught up
-              </Text>
-
-              <Text style={styles.emptyText}>
-                You have no unread notifications.
-              </Text>
-            </View>
-          }
-        />
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );
+}
+
+function formatNotificationTime(
+  dateString: string
+) {
+  const date = new Date(dateString);
+
+  return date.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 const styles = StyleSheet.create({
