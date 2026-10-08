@@ -43,6 +43,12 @@ export default function StaffDashboardScreen() {
     );
   };
 
+  const openIssueMonitoring = () => {
+    router.push(
+      '/issue-monitoring' as Href,
+    );
+  };
+
   return (
     <SafeAreaView style={styles.page}>
       <View style={styles.phoneContainer}>
@@ -84,7 +90,7 @@ export default function StaffDashboardScreen() {
             </View>
           </View>
 
-          {/* Section heading */}
+          {/* Overview */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
               Overview
@@ -127,7 +133,7 @@ export default function StaffDashboardScreen() {
               }
             />
 
-            {/* Expired Reservations */}
+            {/* Expired */}
             <StaffStatCard
               value="26"
               label="Expired Today"
@@ -149,6 +155,9 @@ export default function StaffDashboardScreen() {
               value="04"
               label="Open Issues"
               variant="red"
+              onPress={
+                openIssueMonitoring
+              }
               icon={
                 <Ionicons
                   name="warning-outline"
@@ -166,7 +175,11 @@ export default function StaffDashboardScreen() {
                 Recent Activity
               </Text>
 
-              <Text style={styles.activitySubtitle}>
+              <Text
+                style={
+                  styles.activitySubtitle
+                }
+              >
                 Latest staff reservation activity
               </Text>
             </View>
@@ -213,12 +226,15 @@ export default function StaffDashboardScreen() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
+
     backgroundColor: '#E5E7EB',
+
     alignItems: 'center',
   },
 
   phoneContainer: {
     flex: 1,
+
     width: '100%',
     maxWidth: 390,
 

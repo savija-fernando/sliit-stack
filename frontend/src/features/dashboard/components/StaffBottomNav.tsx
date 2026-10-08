@@ -38,17 +38,28 @@ export default function StaffBottomNav({
 
     if (item === 'queues') {
       router.push(
-        '/staff-queues' as Href,
+        '/staff-queues?type=book' as Href,
       );
+
+      return;
     }
 
-    // Monitoring and Profile will be
-    // connected when those screens exist.
+    if (item === 'monitoring') {
+      router.push(
+        '/issue-monitoring' as Href,
+      );
+
+      return;
+    }
+
+    // Profile will be connected
+    // when the staff profile screen exists.
   };
 
   const items: {
     key: StaffNavItem;
     label: string;
+    disabled?: boolean;
   }[] = [
     {
       key: 'dashboard',
@@ -65,6 +76,7 @@ export default function StaffBottomNav({
     {
       key: 'profile',
       label: 'Profile',
+      disabled: true,
     },
   ];
 
@@ -77,20 +89,33 @@ export default function StaffBottomNav({
         return (
           <Pressable
             key={item.key}
+            disabled={item.disabled}
             onPress={() =>
               navigate(item.key)
             }
-            style={[
+            style={({ pressed }) => [
               styles.item,
+
               isActive &&
                 styles.activeItem,
+
+              item.disabled &&
+                styles.disabledItem,
+
+              pressed &&
+                !item.disabled &&
+                styles.pressedItem,
             ]}
           >
             <Text
               style={[
                 styles.text,
+
                 isActive &&
                   styles.activeText,
+
+                item.disabled &&
+                  styles.disabledText,
               ]}
             >
               {item.label}
@@ -134,13 +159,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#C8D6F0',
   },
 
+  pressedItem: {
+    opacity: 0.75,
+  },
+
+  disabledItem: {
+    opacity: 0.45,
+  },
+
   text: {
     fontSize: 10,
+
     color: '#222222',
   },
 
   activeText: {
     fontWeight: '700',
+
     color: '#334E8A',
+  },
+
+  disabledText: {
+    color: '#94A3B8',
   },
 });

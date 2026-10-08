@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+
 import {
   Modal,
   Pressable,
@@ -61,6 +62,7 @@ export default function StaffSideMenu({
               onPress={onClose}
               style={({ pressed }) => [
                 styles.closeButton,
+
                 pressed &&
                   styles.buttonPressed,
               ]}
@@ -112,7 +114,11 @@ export default function StaffSideMenu({
             <MenuItem
               icon="warning-outline"
               label="Open Issues"
-              disabled
+              onPress={() =>
+                navigate(
+                  '/issue-monitoring' as Href,
+                )
+              }
             />
 
             <MenuItem
@@ -130,6 +136,7 @@ export default function StaffSideMenu({
           <Pressable
             style={({ pressed }) => [
               styles.logoutButton,
+
               pressed &&
                 styles.buttonPressed,
             ]}
@@ -149,7 +156,7 @@ export default function StaffSideMenu({
           </Pressable>
         </View>
 
-        {/* Close menu when clicking outside */}
+        {/* Close menu by pressing outside */}
         <Pressable
           style={styles.backdrop}
           onPress={onClose}
@@ -221,7 +228,9 @@ function MenuItem({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
+
     flexDirection: 'row',
+
     backgroundColor:
       'rgba(0, 0, 0, 0.35)',
   },
