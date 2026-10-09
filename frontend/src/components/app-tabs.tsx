@@ -90,7 +90,34 @@ export default function AppTabs() {
           ),
         }}
       />
-
+      <Tabs.Screen
+        name="date-time-filter"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="available-seats"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="study-rooms"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="admin-seat-studyroom"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="admin-resources"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="study-room-picker"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="study-room-calendar"
+        options={{ href: null }}
+      />
       <Tabs.Screen
         name="notifications"
         options={{ href: null }}

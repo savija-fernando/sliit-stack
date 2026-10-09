@@ -1,5 +1,5 @@
-import ScreenPlaceholder from '@/components/ScreenPlaceholder';
+import SeatRoomSelectionScreen from '@/features/seat-room-booking/screens/SeatRoomSelectionScreen';
 
 export default function SeatsScreen() {
-  return <ScreenPlaceholder title="Seats" />;
+  return <SeatRoomSelectionScreen />;
 }
