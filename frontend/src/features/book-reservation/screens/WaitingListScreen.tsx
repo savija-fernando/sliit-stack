@@ -16,7 +16,7 @@ import AppHeader from '@/components/AppHeader';
 import BackRow from '../components/BackRow';
 import {
   getBookById,
-  isOnWaitingList,
+  getWaitingListEntry,
   leaveWaitingList,
 } from '../services/bookService';
 import type { Book } from '../types/book';
@@ -37,33 +37,47 @@ export default function WaitingListScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const [book, setBook] = useState<Book | null>(null);
-  const [onList, setOnList] = useState(false);
-  const [notify, setNotify] = useState(true);
-  const [loading, setLoading] = useState(true);
+const [book, setBook] = useState<Book | null>(null);
+const [onList, setOnList] = useState(false);
+const [position, setPosition] = useState<number | null>(null);
+const [notify, setNotify] = useState(true);
+const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
+useEffect(() => {
+  let cancelled = false;
+  setLoading(true);
 
-    Promise.all([getBookById(id), isOnWaitingList(id)])
-      .then(([result, joined]) => {
-        if (cancelled) return;
-        setBook(result);
-        setOnList(joined);
-      })
-      .catch((error) => console.error('Failed to load waiting list:', error))
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+  Promise.all([
+    getBookById(id),
+    getWaitingListEntry(id),
+  ])
+    .then(([result, entry]) => {
+      if (cancelled) return;
 
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
+      setBook(result);
+
+      if (entry) {
+        setOnList(true);
+        setPosition(entry.position);
+      } else {
+        setOnList(false);
+        setPosition(null);
+      }
+    })
+    .catch((error) =>
+      console.error('Failed to load waiting list:', error)
+    )
+    .finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+
+  return () => {
+    cancelled = true;
+  };
+}, [id]);
 
   // Your position is the people already waiting + you.
-  const position = (book?.waitingCount ?? 0) + 1;
+  //const position = (book?.waitingCount ?? 0) + 1;
 
   const handleLeave = async () => {
     if (!book) return;

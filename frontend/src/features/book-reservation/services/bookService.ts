@@ -1,145 +1,452 @@
+import { supabase } from '@/lib/supabase';
+
 import type {
   Book,
   BookSearchParams,
-  WaitingListEntry,
+  BookStatus,
   WaitingListItem,
 } from '../types/book';
 
-// Dummy data. Replace with the Supabase query later.
-const mockBooks: Book[] = [
-  {
-    id: '1',
-    title: 'Design patterns',
-    author: 'Gamma, Helm, Johnson, Vlissides',
-    genre: 'Academic',
-    status: 'Available',
-    location: 'Shelf B4, 2nd floor',
-    totalCopies: 3,
-    availableCopies: 2,
-  },
-  {
-    id: '2',
-    title: 'Clean code',
-    author: 'Robert C. Martin',
-    genre: 'Academic',
-    status: 'Issued',
-    location: 'Library - Shelf A3',
-    totalCopies: 4,
-    availableCopies: 0,
-    dueDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
-    waitingCount: 1,
-  },
-  {
-    id: '3',
-    title: 'Pragmatic programmer',
-    author: 'Hunt & Thomas',
-    genre: 'Academic',
-    status: 'Reserved',
-    location: 'Library - Shelf B1',
-    totalCopies: 2,
-    availableCopies: 0,
-  },
-  {
-    id: '4',
-    title: 'Refactoring',
-    author: 'Martin Fowler',
-    genre: 'Reference',
-    status: 'Unavailable',
-    location: 'Reference section',
-    totalCopies: 1,
-    availableCopies: 0,
-  },
-  {
-    id: '5',
-    title: 'Clean architecture',
-    author: 'Robert C. Martin',
-    genre: 'Academic',
-    status: 'Reserved',
-    location: 'Library - Shelf A3',
-    totalCopies: 2,
-    availableCopies: 0,
-  },
-];
+/**
+ * Convert a Supabase database row
+ * into the Book type used by the app.
+ */
+function mapBook(row: any): Book {
+  return {
+    id: row.id,
 
-export async function searchBooks({
-  search = '',
-  genre = '',
-}: BookSearchParams): Promise<Book[]> {
-  // Simulates network delay so the loading state can be seen.
-  await new Promise((resolve) => setTimeout(resolve, 300));
+    title: row.title,
+    author: row.author,
+    genre: row.genre,
+    isbn: row.isbn ?? undefined,
 
-  const query = search.trim().toLowerCase();
+    status: row.status as BookStatus,
 
-  return mockBooks.filter((book) => {
-    const matchesSearch =
-      !query ||
-      book.title.toLowerCase().includes(query) ||
-      book.author.toLowerCase().includes(query);
+    description: row.description ?? undefined,
+    coverUrl: row.cover_url ?? undefined,
+    location: row.location ?? undefined,
 
-    const matchesGenre = !genre || book.genre === genre;
+    totalCopies: row.total_copies,
+    availableCopies: row.available_copies,
+  };
+}
 
-    return matchesSearch && matchesGenre;
+/**
+ * CREATE
+ * Create a new book.
+ *
+ * Staff/admin users will use this later.
+ */
+export async function createBook(book: {
+  title: string;
+  author: string;
+  genre: string;
+  isbn?: string;
+  description?: string;
+  coverUrl?: string;
+  location?: string;
+  status?: BookStatus;
+  totalCopies?: number;
+  availableCopies?: number;
+}): Promise<Book> {
+  const { data, error } = await supabase
+    .from('books')
+    .insert({
+      title: book.title,
+      author: book.author,
+      genre: book.genre,
+      isbn: book.isbn ?? null,
+      description: book.description ?? null,
+      cover_url: book.coverUrl ?? null,
+      location: book.location ?? null,
+      status: book.status ?? 'Available',
+      total_copies: book.totalCopies ?? 1,
+      available_copies:
+        book.availableCopies ?? book.totalCopies ?? 1,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create book: ${error.message}`);
+  }
+
+  return mapBook(data);
+}
+
+/**
+ * READ
+ * Get all books.
+ */
+export async function getBooks(): Promise<Book[]> {
+  const { data, error } = await supabase
+    .from('books')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch books: ${error.message}`);
+  }
+
+  return (data ?? []).map(mapBook);
+}
+
+/**
+ * READ
+ * Get a single book by ID.
+ */
+export async function getBookById(id: string): Promise<Book> {
+  const { data, error } = await supabase
+    .from('books')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to fetch book: ${error.message}`);
+  }
+
+  return mapBook(data);
+}
+
+/**
+ * SEARCH
+ * Search books by title, author or ISBN.
+ */
+export async function searchBooks(
+  params: BookSearchParams
+): Promise<Book[]> {
+  const search = params.search?.trim();
+  const genre = params.genre?.trim();
+
+  let query = supabase
+    .from('books')
+    .select('*');
+
+  if (search) {
+    query = query.or(
+      `title.ilike.%${search}%,author.ilike.%${search}%,isbn.ilike.%${search}%`
+    );
+  }
+
+  if (genre) {
+    query = query.eq('genre', genre);
+  }
+
+  query = query.order('created_at', {
+    ascending: false,
   });
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Failed to search books: ${error.message}`);
+  }
+
+  return (data ?? []).map(mapBook);
 }
 
-export async function getBookById(id: string): Promise<Book | null> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  return mockBooks.find((book) => book.id === id) ?? null;
+/**
+ * UPDATE
+ * Update an existing book.
+ *
+ * Staff/admin users will use this later.
+ */
+export async function updateBook(
+  id: string,
+  updates: {
+    title?: string;
+    author?: string;
+    genre?: string;
+    isbn?: string;
+    description?: string;
+    coverUrl?: string;
+    location?: string;
+    status?: BookStatus;
+    totalCopies?: number;
+    availableCopies?: number;
+  }
+): Promise<Book> {
+  const databaseUpdates: Record<string, unknown> = {};
+
+  if (updates.title !== undefined) {
+    databaseUpdates.title = updates.title;
+  }
+
+  if (updates.author !== undefined) {
+    databaseUpdates.author = updates.author;
+  }
+
+  if (updates.genre !== undefined) {
+    databaseUpdates.genre = updates.genre;
+  }
+
+  if (updates.isbn !== undefined) {
+    databaseUpdates.isbn = updates.isbn;
+  }
+
+  if (updates.description !== undefined) {
+    databaseUpdates.description = updates.description;
+  }
+
+  if (updates.coverUrl !== undefined) {
+    databaseUpdates.cover_url = updates.coverUrl;
+  }
+
+  if (updates.location !== undefined) {
+    databaseUpdates.location = updates.location;
+  }
+
+  if (updates.status !== undefined) {
+    databaseUpdates.status = updates.status;
+  }
+
+  if (updates.totalCopies !== undefined) {
+    databaseUpdates.total_copies = updates.totalCopies;
+  }
+
+  if (updates.availableCopies !== undefined) {
+    databaseUpdates.available_copies =
+      updates.availableCopies;
+  }
+
+  const { data, error } = await supabase
+    .from('books')
+    .update(databaseUpdates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to update book: ${error.message}`);
+  }
+
+  return mapBook(data);
 }
 
-// Dummy waiting list state (replace with Supabase later).
-const waitingListEntries = new Map<string, WaitingListEntry>([
-  ['5', { bookId: '5', position: 1, status: 'Ready', collectBy: 'tomorrow, 5:00 pm' }],
-  ['3', { bookId: '3', position: 2, status: 'Waiting', estimatedDays: 6 }],
-  ['4', { bookId: '4', position: 3, status: 'Waiting', estimatedDays: 21 }],
-]);
+/**
+ * DELETE
+ * Delete a book by ID.
+ *
+ * Staff/admin users will use this later.
+ */
+export async function deleteBook(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('books')
+    .delete()
+    .eq('id', id);
 
-export async function joinWaitingList(bookId: string): Promise<void> {
-  const book = mockBooks.find((item) => item.id === bookId);
-  if (!book || waitingListEntries.has(bookId)) return;
-
-  const estimatedDays = book.dueDate
-    ? Math.max(
-        0,
-        Math.ceil((new Date(book.dueDate).getTime() - Date.now()) / 86400000)
-      )
-    : undefined;
-
-  waitingListEntries.set(bookId, {
-    bookId,
-    position: (book.waitingCount ?? 0) + 1,
-    status: 'Waiting',
-    estimatedDays,
-  });
+  if (error) {
+    throw new Error(`Failed to delete book: ${error.message}`);
+  }
 }
 
-export async function leaveWaitingList(bookId: string): Promise<void> {
-  waitingListEntries.delete(bookId);
+//waiting list functions
+
+/**
+ * WAITING LIST
+ * Check whether the current user is already
+ * on the waiting list for a book.
+ */
+export async function isOnWaitingList(
+  bookId: string
+): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return false;
+  }
+
+  const { data, error } = await supabase
+    .from('waiting_list')
+    .select('id')
+    .eq('book_id', bookId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Failed to check waiting list: ${error.message}`
+    );
+  }
+
+  return !!data;
 }
 
-export async function isOnWaitingList(bookId: string): Promise<boolean> {
-  return waitingListEntries.has(bookId);
+/**
+ * WAITING LIST
+ * Add the current user to the waiting list.
+ */
+export async function joinWaitingList(
+  bookId: string
+): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('You must be logged in to join the waiting list.');
+  }
+
+  // Find the current last position for this book.
+  const { data: lastEntry, error: positionError } =
+    await supabase
+      .from('waiting_list')
+      .select('position')
+      .eq('book_id', bookId)
+      .order('position', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+  if (positionError) {
+    throw new Error(
+      `Failed to get waiting-list position: ${positionError.message}`
+    );
+  }
+
+  const nextPosition = lastEntry
+    ? lastEntry.position + 1
+    : 1;
+
+  const { error } = await supabase
+    .from('waiting_list')
+    .insert({
+      book_id: bookId,
+      user_id: user.id,
+      position: nextPosition,
+      status: 'Waiting',
+    });
+
+  if (error) {
+    throw new Error(
+      `Failed to join waiting list: ${error.message}`
+    );
+  }
+}
+/**
+ * WAITING LIST
+ * Get the current user's waiting-list entry for a book.
+ */
+export async function getWaitingListEntry(bookId: string) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('You must be logged in.');
+  }
+
+  const { data, error } = await supabase
+    .from('waiting_list')
+    .select('id, book_id, user_id, position, status, created_at')
+    .eq('book_id', bookId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Failed to get waiting-list entry: ${error.message}`
+    );
+  }
+
+  return data;
 }
 
+/**
+ * WAITING LIST
+ * Remove the current user from a waiting list.
+ */
+export async function leaveWaitingList(
+  bookId: string
+): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('You must be logged in.');
+  }
+
+  const { error } = await supabase
+    .from('waiting_list')
+    .delete()
+    .eq('book_id', bookId)
+    .eq('user_id', user.id);
+
+  if (error) {
+    throw new Error(
+      `Failed to leave waiting list: ${error.message}`
+    );
+  }
+}
+
+/**
+ * WAITING LIST
+ * Get all waiting lists belonging to the current user.
+ */
 export async function getMyWaitingLists(): Promise<WaitingListItem[]> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const items: WaitingListItem[] = [];
+  if (!user) {
+    throw new Error('You must be logged in.');
+  }
 
-  waitingListEntries.forEach((entry) => {
-    const book = mockBooks.find((item) => item.id === entry.bookId);
-    if (book) items.push({ ...entry, book });
-  });
+  const { data, error } = await supabase
+    .from('waiting_list')
+    .select(`
+      id,
+      book_id,
+      user_id,
+      position,
+      status,
+      created_at,
+      books (*)
+    `)
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true });
 
-  return items;
+  if (error) {
+    throw new Error(
+      `Failed to fetch waiting lists: ${error.message}`
+    );
+  }
+
+  return (data ?? []).map((row: any) => ({
+    bookId: row.book_id,
+    position: row.position,
+    status: row.status as 'Waiting' | 'Ready',
+    estimatedDays: undefined,
+    collectBy: undefined,
+    book: mapBook(row.books),
+  }));
 }
 
-// Later, something like:
-// export async function searchBooks({ search, genre }: BookSearchParams) {
-//   let query = supabase.from('books').select('*');
-//   if (search) query = query.or(`title.ilike.%${search}%,author.ilike.%${search}%`);
-//   if (genre) query = query.eq('genre', genre);
-//   const { data, error } = await query;
-//   if (error) throw error;
-//   return data as Book[];
-// }
+/**
+ * RESERVATION
+ * Reserve an available book for the current user.
+ */
+export async function reserveBook(bookId: string): Promise<string> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('You must be logged in to reserve a book.');
+  }
+
+  const { data, error } = await supabase.rpc('reserve_book', {
+    p_book_id: bookId,
+  });
+
+  if (error) {
+    throw new Error(
+      `Failed to reserve book: ${error.message}`
+    );
+  }
+
+  return data;
+}
