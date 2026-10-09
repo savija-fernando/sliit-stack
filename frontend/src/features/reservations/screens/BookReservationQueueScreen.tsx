@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 
+
 import { Ionicons } from '@expo/vector-icons';
 
 import {
@@ -44,11 +45,17 @@ import type {
   ReservationStatus,
 } from '@/features/reservations/types/reservation';
 
+
+import {
+  getAdminBookReservations,
+} from '@/features/reservations/services/adminBookReservationService';
+
 type QueueStatus =
   | 'pending'
   | 'approved'
   | 'rejected'
-  | 'returned';
+  | 'returned'
+  | 'cancelled';
 
 export default function BookReservationQueueScreen() {
   const router = useRouter();
@@ -64,6 +71,11 @@ export default function BookReservationQueueScreen() {
   ] = useState<ReservationRecord[]>(
     () => getReservations(),
   );
+  const [loadingBooks, setLoadingBooks] =
+  useState(false);
+
+const [bookReservationError, setBookReservationError] =
+  useState<string | null>(null);
 
   const [
     activeType,
@@ -104,13 +116,87 @@ export default function BookReservationQueueScreen() {
     setSearchQuery('');
   }, [params.type]);
 
-  useFocusEffect(
-    useCallback(() => {
-      setReservations(
-        getReservations(),
+  const loadAdminBookReservations = useCallback(
+  async () => {
+    setLoadingBooks(true);
+    setBookReservationError(null);
+
+    try {
+      const bookReservations =
+        await getAdminBookReservations();
+
+        console.log(
+  'ADMIN BOOK RESERVATIONS:',
+  bookReservations
+);
+
+      const mappedReservations: ReservationRecord[] =
+        bookReservations.map((item) => ({
+          id: item.id,
+          title: item.title,
+          author: item.author,
+          studentId: item.user_id,
+          studentName: 'Student',
+          dateText: item.reserved_at
+            ? new Date(item.reserved_at).toLocaleDateString()
+            : 'Date unavailable',
+          status:
+            item.status.toLowerCase() === 'active'
+              ? 'pending'
+              : item.status.toLowerCase() === 'approved'
+                ? 'approved'
+                : item.status.toLowerCase() === 'rejected'
+                  ? 'rejected'
+                  : item.status.toLowerCase() === 'returned'
+                    ? 'returned'
+                    : item.status.toLowerCase() === 'expired'
+                      ? 'expired'
+                      : item.status.toLowerCase() === 'cancelled'
+                        ? 'cancelled'
+                        : 'pending',
+          kind: 'book',
+          published: '',
+          reservedOn: item.reserved_at ?? '',
+          pickupDate: '',
+          dueDate: '',
+        }));
+        console.log(
+  'MAPPED BOOK RESERVATIONS:',
+  mappedReservations.map((item) => ({
+    title: item.title,
+    status: item.status,
+    kind: item.kind,
+  }))
+);
+
+      setReservations((current) => [
+        ...current.filter(
+          (reservation) => reservation.kind !== 'book',
+        ),
+        ...mappedReservations,
+      ]);
+    } catch (error) {
+      setBookReservationError(
+        error instanceof Error
+          ? error.message
+          : 'Could not load book reservations.',
       );
-    }, []),
-  );
+    } finally {
+      setLoadingBooks(false);
+    }
+  },
+  [],
+);
+
+useFocusEffect(
+  useCallback(() => {
+    setReservations(getReservations());
+
+    if (activeType === 'book') {
+      loadAdminBookReservations();
+    }
+  }, [activeType, loadAdminBookReservations]),
+);
 
   const handleSearch = () => {
     setSearchQuery(
@@ -349,8 +435,15 @@ export default function BookReservationQueueScreen() {
           }
           keyboardShouldPersistTaps="handled"
         >
-          {filteredReservations.length >
-          0 ? (
+          {activeType === 'book' && loadingBooks ? (
+            <Text style={{ textAlign: 'center', marginTop: 30 }}>
+              Loading book reservations...
+            </Text>
+          ) : bookReservationError && activeType === 'book' ? (
+            <Text style={{ textAlign: 'center', marginTop: 30, color: 'red' }}>
+              {bookReservationError}
+            </Text>
+          ) : filteredReservations.length > 0 ? (
             filteredReservations.map(
               (reservation) => (
                 <ReservationQueueCard

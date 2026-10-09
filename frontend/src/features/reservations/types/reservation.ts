@@ -3,7 +3,8 @@ export type ReservationStatus =
   | 'approved'
   | 'rejected'
   | 'returned'
-  | 'expired';
+  | 'expired'
+  | 'cancelled';
 
 export type ReservationKind =
   | 'book'

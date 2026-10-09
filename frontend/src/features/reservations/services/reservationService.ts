@@ -242,6 +242,7 @@ export async function cancelReservation(
 
   console.log('🚨 RPC DATA:', data);
   console.log('🚨 RPC ERROR:', error);
+  console.log('🚨 CANCELLATION RESULT:', { data, error });
 
   if (error) {
     throw new Error(

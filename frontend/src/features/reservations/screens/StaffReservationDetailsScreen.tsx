@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 
+
 import {
   Ionicons,
   MaterialCommunityIcons,
@@ -37,6 +38,11 @@ import type {
   ReservationStatus,
 } from '@/features/reservations/types/reservation';
 
+import {
+  getAdminBookReservationById,
+} from '@/features/reservations/services/adminBookReservationService';
+import { ActivityIndicator } from 'react-native';
+
 export default function ReservationDetailsScreen() {
   const router = useRouter();
 
@@ -61,16 +67,108 @@ export default function ReservationDetailsScreen() {
         reservationId,
       ),
     );
+const [loadingBook, setLoadingBook] = useState(false);
+const [bookError, setBookError] = useState('');
 
-  useFocusEffect(
-    useCallback(() => {
-      setReservation(
-        getReservationById(
-          reservationId,
-        ),
-      );
-    }, [reservationId]),
+useFocusEffect(
+  useCallback(() => {
+    let isActive = true;
+
+    const loadReservation = async () => {
+      setBookError('');
+
+      // First, check the existing store.
+      const localReservation =
+        getReservationById(reservationId);
+
+      // Preserve the existing seat reservation flow.
+      if (localReservation?.kind === 'seat') {
+        setReservation(localReservation);
+        setLoadingBook(false);
+        return;
+      }
+
+      // Try loading a real book reservation from Supabase.
+      setLoadingBook(true);
+
+      try {
+        const bookReservation =
+          await getAdminBookReservationById(reservationId);
+
+        if (!isActive) return;
+
+        if (!bookReservation) {
+          setReservation(localReservation);
+          return;
+        }
+
+        const mappedReservation: ReservationRecord = {
+          id: bookReservation.id,
+          title: bookReservation.title,
+          author: bookReservation.author,
+          published: 'Not specified',
+          studentId: bookReservation.user_id,
+          studentName: 'Student',
+          dateText: bookReservation.reserved_at
+            ? new Date(bookReservation.reserved_at)
+                .toLocaleDateString()
+            : 'Date unavailable',
+          reservedOn: bookReservation.reserved_at
+            ? new Date(bookReservation.reserved_at)
+                .toLocaleString()
+            : 'Date unavailable',
+          pickupDate: 'Not assigned',
+          dueDate: 'Not assigned',
+          status:
+            bookReservation.status.toLowerCase() === 'approved'
+              ? 'approved'
+              : bookReservation.status.toLowerCase() === 'rejected'
+                ? 'rejected'
+                : bookReservation.status.toLowerCase() === 'returned'
+                  ? 'returned'
+                  : bookReservation.status.toLowerCase() === 'expired'
+                    ? 'expired'
+                    : 'pending',
+          kind: 'book',
+        };
+
+        setReservation(mappedReservation);
+      } catch (error) {
+        if (!isActive) return;
+
+        setBookError(
+          error instanceof Error
+            ? error.message
+            : 'Failed to load book reservation.',
+        );
+
+        setReservation(localReservation);
+      } finally {
+        if (isActive) {
+          setLoadingBook(false);
+        }
+      }
+    };
+
+    loadReservation();
+
+    return () => {
+      isActive = false;
+    };
+  }, [reservationId]),
+);
+
+if (loadingBook) {
+  return (
+    <SafeAreaView style={styles.page}>
+      <View style={styles.phoneContainer}>
+        <ActivityIndicator size="large" color="#08245B" />
+        <Text>Loading reservation...</Text>
+      </View>
+    </SafeAreaView>
   );
+}
+
 
   if (!reservation) {
     return (

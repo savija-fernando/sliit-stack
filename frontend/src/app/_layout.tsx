@@ -24,15 +24,44 @@ export default function RootLayout() {
         <Stack.Screen name="login" />
         <Stack.Screen name="signup" />
         <Stack.Screen name="(student)" />
-        <Stack.Screen name="staff-dashboard" />
-        <Stack.Screen name="staff-profile" />
-        <Stack.Screen name="staff-queues" />
-        <Stack.Screen name="reservation-details" />
-        <Stack.Screen name="update-reservation" />
-        <Stack.Screen name="expired-reservations" />
-        <Stack.Screen name="issue-details" />
-        <Stack.Screen name="issue-monitoring" />
-        <Stack.Screen name="update-issue" />
+        
+        <Stack.Screen
+          name="staff-dashboard"
+          options={{ animation: 'none' }}
+        />
+        <Stack.Screen
+          name="staff-profile"
+          options={{ animation: 'none' }}
+        />
+        <Stack.Screen
+          name="staff-queues"
+          options={{ animation: 'none' }}
+        />
+        <Stack.Screen
+          name="reservation-details"
+          options={{ animation: 'none' }}
+        />
+        <Stack.Screen
+          name="update-reservation"
+          options={{ animation: 'none' }}
+        />
+        <Stack.Screen
+          name="expired-reservations"
+          options={{ animation: 'none' }}
+        />
+        <Stack.Screen
+          name="issue-details"
+          options={{ animation: 'none' }}
+        />
+        <Stack.Screen
+          name="issue-monitoring"
+          options={{ animation: 'none' }}
+        />
+        <Stack.Screen
+          name="update-issue"
+          options={{ animation: 'none' }}
+        />
+
       </Stack>
     </ThemeProvider>
   );

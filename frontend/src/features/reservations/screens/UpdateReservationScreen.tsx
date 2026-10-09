@@ -1,5 +1,6 @@
-import { useState } from 'react';
-
+import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { ActivityIndicator } from 'react-native';
 import {
   Pressable,
   SafeAreaView,
@@ -9,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
 
 import {
   Ionicons,
@@ -30,6 +32,14 @@ import {
   updateReservation,
 } from '@/features/reservations/services/reservationStore';
 
+import {
+  getAdminBookReservationById,
+  updateAdminBookReservationStatus,
+} from '@/features/reservations/services/adminBookReservationService';
+
+import type { ReservationRecord } from '@/features/reservations/types/reservation';
+
+
 type ReservationUpdateStatus =
   | 'approved'
   | 'rejected'
@@ -49,10 +59,92 @@ export default function UpdateReservationScreen() {
       ? params.id
       : '';
 
-  const reservation =
-    getReservationById(
-      reservationId,
-    );
+const [reservation, setReservation] = useState<
+  ReservationRecord | undefined
+>(() => getReservationById(reservationId));
+
+const [loadingBook, setLoadingBook] = useState(false);
+
+useFocusEffect(
+  useCallback(() => {
+    let isActive = true;
+
+    const loadReservation = async () => {
+      const localReservation = getReservationById(reservationId);
+
+      // Preserve the existing seat reservation flow.
+      if (localReservation?.kind === 'seat') {
+        setReservation(localReservation);
+        setLoadingBook(false);
+        return;
+      }
+
+      setLoadingBook(true);
+
+      try {
+        const bookReservation =
+          await getAdminBookReservationById(reservationId);
+
+        if (!isActive) return;
+
+        if (!bookReservation) {
+          setReservation(localReservation);
+          return;
+        }
+
+        const dbStatus = bookReservation.status.toLowerCase();
+
+        const mappedReservation: ReservationRecord = {
+          id: bookReservation.id,
+          title: bookReservation.title,
+          author: bookReservation.author,
+          published: 'Not specified',
+          studentId: bookReservation.user_id,
+          studentName: 'Student',
+          dateText: bookReservation.reserved_at
+            ? new Date(bookReservation.reserved_at).toLocaleDateString()
+            : 'Date unavailable',
+          reservedOn: bookReservation.reserved_at
+            ? new Date(bookReservation.reserved_at).toLocaleString()
+            : 'Date unavailable',
+          pickupDate: 'Not assigned',
+          dueDate: 'Not assigned',
+          status:
+            dbStatus === 'approved'
+              ? 'approved'
+              : dbStatus === 'rejected'
+                ? 'rejected'
+                : dbStatus === 'returned'
+                  ? 'returned'
+                  : dbStatus === 'expired'
+                    ? 'expired'
+                    : 'pending',
+          kind: 'book',
+        };
+
+        setReservation(mappedReservation);
+      } catch (error) {
+        if (!isActive) return;
+
+        setUpdateError(
+          error instanceof Error
+            ? error.message
+            : 'Failed to load reservation.',
+        );
+
+        setReservation(localReservation);
+      } finally {
+        if (isActive) setLoadingBook(false);
+      }
+    };
+
+    loadReservation();
+
+    return () => {
+      isActive = false;
+    };
+  }, [reservationId]),
+);
 
   const [
     selectedStatus,
@@ -70,7 +162,38 @@ export default function UpdateReservationScreen() {
   ] = useState(
     reservation?.note ?? '',
   );
+  const [saving, setSaving] = useState(false);
+const [updateError, setUpdateError] = useState('');
 
+  useEffect(() => {
+  if (!reservation) return;
+
+  setSelectedStatus(getInitialStatus(reservation.status));
+  setNote(reservation.note ?? '');
+}, [reservation]);
+
+
+
+if (loadingBook) {
+  return (
+    <SafeAreaView style={styles.page}>
+      <View style={styles.phoneContainer}>
+        <AppHeader
+          rightAction="profile"
+          sideMenu="staff"
+        />
+        <ActivityIndicator
+          size="large"
+          color="#08245B"
+          style={{ marginTop: 40 }}
+        />
+        <Text style={{ textAlign: 'center', marginTop: 12 }}>
+          Loading reservation...
+        </Text>
+      </View>
+    </SafeAreaView>
+  );
+}
   if (!reservation) {
     return (
       <SafeAreaView style={styles.page}>
@@ -142,17 +265,52 @@ export default function UpdateReservationScreen() {
     value: 'expired',
   });
 
-  const handleUpdate = () => {
-    updateReservation(
-      reservationId,
-      selectedStatus,
-      note.trim(),
-    );
+
+const handleUpdate = async () => {
+  if (saving) return;
+
+  setSaving(true);
+  setUpdateError('');
+
+  try {
+    if (isBook) {
+      const statusMap = {
+        approved: 'Approved',
+        rejected: 'Rejected',
+        returned: 'Returned',
+        expired: 'Expired',
+      } as const;
+
+
+      console.log('Reservation ID:', reservationId);
+      console.log('Selected status:', statusMap[selectedStatus]);
+
+      await updateAdminBookReservationStatus(
+        reservationId,
+        statusMap[selectedStatus],
+      );
+    } else {
+      updateReservation(
+        reservationId,
+        selectedStatus,
+        note.trim(),
+      );
+    }
 
     router.replace(
       `/reservation-details?id=${reservationId}` as Href,
     );
-  };
+  } catch (error) {
+    setUpdateError(
+      error instanceof Error
+        ? error.message
+        : 'Failed to update reservation.',
+    );
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.page}>
@@ -390,6 +548,11 @@ export default function UpdateReservationScreen() {
               {note.length}/250
             </Text>
           </View>
+          {updateError !== '' && (
+          <Text style={{ color: '#DC2626', marginTop: 12 }}>
+            {updateError}
+          </Text>
+        )}
 
           <Pressable
             style={({ pressed }) => [
@@ -397,9 +560,11 @@ export default function UpdateReservationScreen() {
               pressed &&
                 styles.updateButtonPressed,
             ]}
+            disabled={saving}
             onPress={handleUpdate}
             accessibilityRole="button"
             accessibilityLabel="Update reservation"
+            
           >
             <Ionicons
               name="checkmark-circle-outline"
@@ -412,7 +577,7 @@ export default function UpdateReservationScreen() {
                 styles.updateButtonText
               }
             >
-              Update Reservation
+              {saving ? 'Saving...' : 'Update Reservation'}
             </Text>
           </Pressable>
         </ScrollView>
