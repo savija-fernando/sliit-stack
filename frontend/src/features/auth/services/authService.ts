@@ -75,3 +75,43 @@ export async function logout(): Promise<void> {
     throw new Error(`Logout failed: ${error.message}`);
   }
 }
+
+
+
+export async function signUp(
+  fullName: string,
+  universityId: string,
+  email: string,
+  password: string
+): Promise<void> {
+  const cleanName = fullName.trim();
+  const cleanId = universityId.trim();
+  const cleanEmail = email.trim().toLowerCase();
+
+  if (!cleanName || !cleanId || !cleanEmail || !password) {
+    throw new Error('Please fill in all required fields.');
+  }
+
+  if (password.length < 6) {
+    throw new Error('Password must be at least 6 characters.');
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email: cleanEmail,
+    password,
+    options: {
+      data: {
+        full_name: cleanName,
+        university_id: cleanId,
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data.user) {
+    throw new Error('Unable to create your account. Please try again.');
+  }
+}

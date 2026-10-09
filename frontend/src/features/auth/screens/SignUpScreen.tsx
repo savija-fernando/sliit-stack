@@ -1,5 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { Alert } from 'react-native';
+import { signUp } from '@/features/auth/services/authService';
 import {
   Image,
   Pressable,
@@ -15,6 +17,7 @@ type UserRole = 'student' | 'staff';
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const [role, setRole] = useState<UserRole>('student');
   const [fullName, setFullName] = useState('');
@@ -34,6 +37,59 @@ export default function SignUpScreen() {
     setPassword('');
     setConfirmPassword('');
   };
+  
+const handleSignUp = async () => {
+  if (!fullName.trim() || !userId.trim() || !email.trim() || !password || !confirmPassword) {
+    Alert.alert('Missing information', 'Please fill in all fields.');
+    return;
+  }
+
+  if (password.length < 6) {
+    Alert.alert('Invalid password', 'Password must be at least 6 characters.');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    Alert.alert('Password mismatch', 'Your passwords do not match.');
+    return;
+  }
+
+  // Public self-registration is for students only.
+  if (role !== 'student') {
+    Alert.alert(
+      'Staff registration',
+      'Please contact your library administrator to create a staff account.'
+    );
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    await signUp(fullName, userId, email, password);
+
+    Alert.alert(
+      'Registration successful',
+      'Your account has been created. Please check your email if confirmation is required.',
+      [
+        {
+          text: 'Go to Login',
+          onPress: () => router.replace('/login'),
+        },
+      ]
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Something went wrong. Please try again.';
+
+    Alert.alert('Sign Up Failed', message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -183,11 +239,21 @@ export default function SignUpScreen() {
               secureTextEntry
             />
 
-            <Pressable style={styles.signupButton}>
+            
+            <Pressable
+              style={[
+                styles.signupButton,
+                loading && { opacity: 0.6 },
+              ]}
+              onPress={handleSignUp}
+              disabled={loading}
+            >
+              
               <Text style={styles.signupButtonText}>
-                Sign Up
+                {loading ? 'Creating Account...' : 'Sign Up'}
               </Text>
             </Pressable>
+
 
             <View style={styles.loginContainer}>
               <Text style={styles.loginText}>
