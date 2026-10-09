@@ -1,4 +1,4 @@
-# SLIITStack — Library Reservation & Study Space Booking App
+# SLIITStack — Library Book Reservation and Reading-Room Seat Booking App
 
 ## 1. Project Overview
 
