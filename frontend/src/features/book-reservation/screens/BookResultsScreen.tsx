@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { Image } from 'react-native';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +10,11 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
 
 import AppHeader from '@/components/AppHeader';
 import { searchBooks } from '../services/bookService';
@@ -31,23 +36,39 @@ export default function BookResultsScreen() {
   const [results, setResults] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useFocusEffect(
+  useCallback(() => {
     let cancelled = false;
-    setLoading(true);
 
-    searchBooks({ search, genre })
-      .then((books) => {
-        if (!cancelled) setResults(books);
-      })
-      .catch((error) => console.error('Book search failed:', error))
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const loadBooks = async () => {
+      try {
+        setLoading(true);
+
+        const books = await searchBooks({
+          search,
+          genre,
+        });
+
+        if (!cancelled) {
+          setResults(books);
+        }
+      } catch (error) {
+        console.error('Book search failed:', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadBooks();
 
     return () => {
       cancelled = true;
     };
-  }, [search, genre]);
+  }, [search, genre])
+);
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -79,7 +100,14 @@ export default function BookResultsScreen() {
               ]}
             >
               <View style={styles.cover}>
-                <Ionicons name="book" size={32} color="#080B13" />
+                {book.coverUrl ? (
+                  <Image
+                    source={{ uri: book.coverUrl }}
+                    style={styles.coverImage}
+                  />
+                ) : (
+                  <Ionicons name="book" size={32} color="#080B13" />
+                )}
               </View>
 
               <View style={styles.bookInfo}>
@@ -196,4 +224,10 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
   },
+  coverImage: {
+  width: '100%',
+  height: '100%',
+  borderRadius: 8,
+  resizeMode: 'cover',
+},
 });

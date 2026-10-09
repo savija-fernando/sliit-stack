@@ -1,12 +1,36 @@
+import { useState } from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+import {
+  useRouter,
+  type Href,
+} from 'expo-router';
+
+import StaffSideMenu from '@/components/StaffSideMenu';
 
 type AppHeaderProps = {
   onMenuPress?: () => void;
+
   onProfilePress?: () => void;
-  rightAction?: 'profile' | 'notifications';
+
+  rightAction?:
+    | 'profile'
+    | 'notifications';
+
   notificationCount?: number;
+
   onNotificationsPress?: () => void;
+
+  sideMenu?: 'staff';
 };
 
 export default function AppHeader({
@@ -15,90 +39,179 @@ export default function AppHeader({
   rightAction = 'profile',
   notificationCount = 0,
   onNotificationsPress,
+  sideMenu,
 }: AppHeaderProps) {
+  const router = useRouter();
+
+  const [
+    staffMenuVisible,
+    setStaffMenuVisible,
+  ] = useState(false);
+
+  const handleMenuPress = () => {
+    if (sideMenu === 'staff') {
+      setStaffMenuVisible(true);
+
+      return;
+    }
+
+    onMenuPress?.();
+  };
+
+  const handleProfilePress = () => {
+    // If a screen supplied its own profile action,
+    // use that first.
+    if (onProfilePress) {
+      onProfilePress();
+
+      return;
+    }
+
+    // Staff screens automatically open
+    // the staff profile.
+    if (sideMenu === 'staff') {
+      router.push(
+        '/staff-profile' as Href,
+      );
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      {/* Menu */}
-      <Pressable
-        onPress={onMenuPress}
-        style={({ pressed }) => [
-          styles.iconButton,
-          pressed && styles.iconButtonPressed,
-        ]}
-        hitSlop={4}
-        accessibilityRole="button"
-        accessibilityLabel="Open menu"
-      >
-        <Ionicons name="menu-outline" size={24} color="#111827" />
-      </Pressable>
+    <>
+      <View style={styles.container}>
+        {/* Menu */}
+        <Pressable
+          onPress={handleMenuPress}
+          style={({ pressed }) => [
+            styles.iconButton,
 
-      {/* Logo + App name */}
-      <View style={styles.brandContainer}>
-        <Image
-          source={require('@/assets/images/sliit_stack.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+            pressed &&
+              styles.iconButtonPressed,
+          ]}
+          hitSlop={4}
+          accessibilityRole="button"
+          accessibilityLabel="Open menu"
+        >
+          <Ionicons
+            name="menu-outline"
+            size={24}
+            color="#111827"
+          />
+        </Pressable>
 
-        <Text style={styles.brandText}>SLIITStack</Text>
+        {/* Logo + App name */}
+        <View style={styles.brandContainer}>
+          <Image
+            source={require('@/assets/images/sliit_stack.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+
+          <Text style={styles.brandText}>
+            SLIITStack
+          </Text>
+        </View>
+
+        {/* Right action */}
+        {rightAction ===
+        'notifications' ? (
+          <Pressable
+            onPress={
+              onNotificationsPress
+            }
+            style={({ pressed }) => [
+              styles.iconButton,
+
+              pressed &&
+                styles.iconButtonPressed,
+            ]}
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+          >
+            <Ionicons
+              name="notifications"
+              size={24}
+              color="#F59E0B"
+            />
+
+            {notificationCount > 0 && (
+              <View style={styles.badge}>
+                <Text
+                  style={
+                    styles.badgeText
+                  }
+                >
+                  {notificationCount > 9
+                    ? '9+'
+                    : notificationCount}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={
+              handleProfilePress
+            }
+            style={({ pressed }) => [
+              styles.iconButton,
+
+              pressed &&
+                styles.iconButtonPressed,
+            ]}
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+          >
+            <Ionicons
+              name="person-circle-outline"
+              size={26}
+              color="#111827"
+            />
+          </Pressable>
+        )}
       </View>
 
-      {/* Notifications (Home) or Profile (all other screens) */}
-      {rightAction === 'notifications' ? (
-        <Pressable
-          onPress={onNotificationsPress}
-          style={({ pressed }) => [
-            styles.iconButton,
-            pressed && styles.iconButtonPressed,
-          ]}
-          hitSlop={4}
-          accessibilityRole="button"
-          accessibilityLabel="Notifications"
-        >
-          <Ionicons name="notifications" size={24} color="#F59E0B" />
-
-          {notificationCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {notificationCount > 9 ? '9+' : notificationCount}
-              </Text>
-            </View>
-          )}
-        </Pressable>
-      ) : (
-        <Pressable
-          onPress={onProfilePress}
-          style={({ pressed }) => [
-            styles.iconButton,
-            pressed && styles.iconButtonPressed,
-          ]}
-          hitSlop={4}
-          accessibilityRole="button"
-          accessibilityLabel="Open profile"
-        >
-          <Ionicons name="person-circle-outline" size={26} color="#111827" />
-        </Pressable>
+      {/* Staff side menu */}
+      {sideMenu === 'staff' && (
+        <StaffSideMenu
+          visible={
+            staffMenuVisible
+          }
+          onClose={() =>
+            setStaffMenuVisible(false)
+          }
+        />
       )}
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     height: 56,
+
     paddingHorizontal: 12,
+
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: StyleSheet.hairlineWidth,
+
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
+
     borderBottomColor: '#E5E7EB',
   },
 
   iconButton: {
     width: 44,
     height: 44,
+
     borderRadius: 22,
+
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -110,6 +223,7 @@ const styles = StyleSheet.create({
   brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+
     gap: 8,
   },
 
@@ -122,24 +236,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontStyle: 'italic',
+
     color: '#111827',
   },
 
   badge: {
     position: 'absolute',
+
     top: 2,
     right: 2,
+
     minWidth: 16,
     height: 16,
+
     paddingHorizontal: 3,
+
     borderRadius: 8,
+
     backgroundColor: '#DC2626',
+
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   badgeText: {
     color: '#FFFFFF',
+
     fontSize: 10,
     fontWeight: '700',
   },

@@ -1,4 +1,8 @@
-import { useEffect, useState } from 'react';
+import {
+  useCallback,
+  useState,
+} from 'react';
+
 import {
   ActivityIndicator,
   Keyboard,
@@ -9,43 +13,99 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+} from '@expo/vector-icons';
+
+import {
+  useFocusEffect,
+  useRouter,
+} from 'expo-router';
 
 import AppHeader from '@/components/AppHeader';
+
 import NotificationCard from '../components/NotificationCard';
 import QuickActionCard from '../components/QuickActionCard';
 import ReservationCard from '../components/ReservationCard';
 import SectionHeader from '../components/SectionHeader';
+
 import { getDashboardData } from '../services/dashboardService';
-import type { DashboardData } from '../types/dashboard';
+
+import {
+  getMyNotifications,
+} from '../../notifications/services/notificationService';
+
+import type {
+  NotificationItem,
+} from '../../notifications/services/notificationService';
+
+import type {
+  DashboardData,
+} from '../types/dashboard';
 
 export default function HomeScreen() {
   const router = useRouter();
 
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [data, setData] =
+    useState<DashboardData | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const [notifications, setNotifications] =
+    useState<NotificationItem[]>([]);
 
-    getDashboardData()
-      .then((result) => {
-        if (!cancelled) setData(result);
-      })
-      .catch((error) => console.error('Failed to load dashboard:', error))
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+  const [loading, setLoading] =
+    useState(true);
 
-    return () => {
-      cancelled = true;
-    };
+  const [search, setSearch] =
+    useState('');
+
+  const loadHomeData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const [dashboardResult, notificationResult] =
+        await Promise.all([
+          getDashboardData(),
+          getMyNotifications(),
+        ]);
+
+      setData(dashboardResult);
+      setNotifications(notificationResult);
+    } catch (error) {
+      console.error(
+        'Failed to load home data:',
+        error
+      );
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadHomeData();
+    }, [loadHomeData])
+  );
+
+  const unreadCount = notifications.filter(
+    (notification) => !notification.read
+  ).length;
+
+  const homeNotifications = notifications
+    .slice(0, 3)
+    .map((notification) => ({
+      id: notification.id,
+      message: notification.message,
+      time: formatNotificationTime(
+        notification.createdAt
+      ),
+      read: notification.read,
+    }));
 
   const handleSearch = () => {
     const trimmed = search.trim();
+
     Keyboard.dismiss();
 
     if (!trimmed) {
@@ -55,7 +115,10 @@ export default function HomeScreen() {
 
     router.push({
       pathname: '/books/results',
-      params: { search: trimmed, genre: '' },
+      params: {
+        search: trimmed,
+        genre: '',
+      },
     });
   };
 
@@ -63,13 +126,17 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <AppHeader
         rightAction="notifications"
-        notificationCount={data?.unreadCount ?? 0}
-        // Open the notifications screen here once it exists
-        onNotificationsPress={() => {}}
+        notificationCount={unreadCount}
+        onNotificationsPress={() =>
+          router.navigate('/notifications')
+        }
       />
 
       {loading || !data ? (
-        <ActivityIndicator style={styles.loader} color="#2563EB" />
+        <ActivityIndicator
+          style={styles.loader}
+          color="#2563EB"
+        />
       ) : (
         <ScrollView
           contentContainerStyle={styles.content}
@@ -79,13 +146,23 @@ export default function HomeScreen() {
         >
           {/* Greeting */}
           <View>
-            <Text style={styles.welcome}>Welcome back</Text>
-            <Text style={styles.name}>Hi, {data.userName} 👋</Text>
+            <Text style={styles.welcome}>
+              Welcome back
+            </Text>
+
+            <Text style={styles.name}>
+              Hi, {data.userName} 👋
+            </Text>
           </View>
 
           {/* Search */}
           <View style={styles.searchBar}>
-            <Ionicons name="search-outline" size={18} color="#9CA3AF" />
+            <Ionicons
+              name="search-outline"
+              size={18}
+              color="#9CA3AF"
+            />
+
             <TextInput
               value={search}
               onChangeText={setSearch}
@@ -103,15 +180,30 @@ export default function HomeScreen() {
           <View style={styles.quickActions}>
             <QuickActionCard
               label="Reserve a book"
-              icon={<Ionicons name="book" size={26} color="#2563EB" />}
-              onPress={() => router.navigate('/books')}
+              icon={
+                <Ionicons
+                  name="book"
+                  size={26}
+                  color="#2563EB"
+                />
+              }
+              onPress={() =>
+                router.navigate('/books')
+              }
             />
+
             <QuickActionCard
               label="Book a seat"
               icon={
-                <MaterialCommunityIcons name="seat" size={28} color="#2563EB" />
+                <MaterialCommunityIcons
+                  name="seat"
+                  size={28}
+                  color="#2563EB"
+                />
               }
-              onPress={() => router.navigate('/seats')}
+              onPress={() =>
+                router.navigate('/seats')
+              }
             />
           </View>
 
@@ -119,17 +211,25 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <SectionHeader
               title="Active reservations"
-              onSeeAll={() => router.navigate('/reservations')}
+              onSeeAll={() =>
+                router.navigate('/reservations')
+              }
             />
 
             <View style={styles.list}>
-              {data.activeReservations.map((reservation) => (
-                <ReservationCard
-                  key={reservation.id}
-                  reservation={reservation}
-                  onPress={() => router.navigate('/reservations')}
-                />
-              ))}
+              {data.activeReservations.map(
+                (reservation) => (
+                  <ReservationCard
+                    key={reservation.id}
+                    reservation={reservation}
+                    onPress={() =>
+                      router.navigate(
+                        '/reservations'
+                      )
+                    }
+                  />
+                )
+              )}
             </View>
           </View>
 
@@ -137,23 +237,45 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <SectionHeader
               title="Notifications"
-              // Open the notifications screen here once it exists
-              onSeeAll={() => {}}
+              onSeeAll={() =>
+                router.navigate('/notifications')
+              }
             />
 
             <View style={styles.list}>
-              {data.notifications.map((notification) => (
-                <NotificationCard
-                  key={notification.id}
-                  notification={notification}
-                />
-              ))}
+              {homeNotifications.length > 0 ? (
+                homeNotifications.map(
+                  (notification) => (
+                    <NotificationCard
+                      key={notification.id}
+                      notification={notification}
+                    />
+                  )
+                )
+              ) : (
+                <Text style={styles.noNotifications}>
+                  No notifications yet.
+                </Text>
+              )}
             </View>
           </View>
         </ScrollView>
       )}
     </SafeAreaView>
   );
+}
+
+function formatNotificationTime(
+  dateString: string
+) {
+  const date = new Date(dateString);
+
+  return date.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 const styles = StyleSheet.create({
@@ -216,5 +338,11 @@ const styles = StyleSheet.create({
 
   list: {
     gap: 12,
+  },
+
+  noNotifications: {
+    color: '#6B7280',
+    fontSize: 14,
+    paddingVertical: 10,
   },
 });

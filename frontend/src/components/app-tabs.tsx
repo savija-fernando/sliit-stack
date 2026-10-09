@@ -1,3 +1,4 @@
+
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
@@ -13,7 +14,9 @@ function TabIcon({
   children: React.ReactNode;
 }) {
   return (
-    <View style={[styles.pill, focused && styles.pillActive]}>{children}</View>
+    <View style={[styles.pill, focused && styles.pillActive]}>
+      {children}
+    </View>
   );
 }
 
@@ -39,6 +42,7 @@ export default function AppTabs() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="books"
         options={{
@@ -50,6 +54,7 @@ export default function AppTabs() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="seats"
         options={{
@@ -61,6 +66,7 @@ export default function AppTabs() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="reservations"
         options={{
@@ -72,6 +78,7 @@ export default function AppTabs() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="profile"
         options={{
@@ -111,6 +118,10 @@ export default function AppTabs() {
         name="study-room-calendar"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="notifications"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }
@@ -122,7 +133,10 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
     paddingTop: 6,
   },
-  label: { fontSize: 11, fontWeight: '700' },
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   pill: {
     width: 56,
     height: 30,
@@ -130,5 +144,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pillActive: { backgroundColor: PILL },
+  pillActive: {
+    backgroundColor: PILL,
+  },
 });
