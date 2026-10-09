@@ -1,3 +1,4 @@
+
 export type ReservationStatus =
   | 'pending'
   | 'approved'
@@ -15,6 +16,7 @@ export type ReservationQueueItem = {
   title: string;
   studentId: string;
   studentName: string;
+  universityId?: string;
   dateText: string;
   status: ReservationStatus;
   kind: ReservationKind;

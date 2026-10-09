@@ -92,6 +92,7 @@ export async function getUnavailableSeatIds(
   return [...unavailable];
 }
 
+
 export async function createSeatBookings({
   seatIds,
   date,
@@ -107,27 +108,65 @@ export async function createSeatBookings({
     throw new Error('Select at least one seat before continuing.');
   }
 
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error('Please sign in before booking seats.');
+  }
+
   const unavailable = new Set(
     await getUnavailableSeatIds(date, startTime, endTime),
   );
-  const conflictingSeats = seatIds.filter((seatId) => unavailable.has(seatId));
-  if (conflictingSeats.length) {
+
+  if (seatIds.some((seatId) => unavailable.has(seatId))) {
     throw new Error(
       'One or more selected seats have just been booked. Go back and choose available seats.',
     );
   }
 
-  const { error } = await supabase.from('seat_bookings').insert(
-    seatIds.map((seatId) => ({
-      seat_id: seatId,
-      date,
-      start_time: `${startTime}:00`,
-      end_time: `${endTime}:00`,
-      'is-active': true,
-    })),
-  );
+  // Create one shared reservation per seat.
+  for (const seatId of seatIds) {
+    const reference = `SEAT-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
 
-  if (error) {
-    throw new Error(`Could not create seat booking: ${error.message}`);
+    const { data: reservation, error: reservationError } = await supabase
+      .from('reservations')
+      .insert({
+        user_id: user.id,
+        reservation_type: 'SEAT',
+        seat_id: seatId,
+        reference,
+        status: 'Active',
+      })
+      .select('id')
+      .single();
+
+    if (reservationError || !reservation) {
+      throw new Error(
+        `Could not create seat reservation: ${reservationError?.message ?? 'Unknown error'}`,
+      );
+    }
+
+    const { error: bookingError } = await supabase
+      .from('seat_bookings')
+      .insert({
+        seat_id: seatId,
+        date,
+        start_time: `${startTime}:00`,
+        end_time: `${endTime}:00`,
+        'is-active': true,
+        reservation_id: reservation.id,
+      });
+
+    if (bookingError) {
+      throw new Error(
+        `Reservation ${reference} was created, but its seat booking failed: ${bookingError.message}`,
+      );
+    }
   }
 }
+

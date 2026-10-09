@@ -111,23 +111,62 @@ export async function getAvailableSlotsForRoom(
   });
 }
 
+
 export async function createStudyRoomBooking(
   roomId: string,
   date: string,
   startTime: string,
   endTime: string,
 ): Promise<void> {
-  const { error } = await supabase.from('studyroom_bookings').insert([
-    {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error('Please sign in before booking a study room.');
+  }
+
+  // Create the shared reservation first.
+  const reference = `ROOM-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+
+  const { data: reservation, error: reservationError } = await supabase
+    .from('reservations')
+    .insert({
+      user_id: user.id,
+      reservation_type: 'ROOM',
+      room_id: roomId,
+      reference,
+      status: 'Active',
+    })
+    .select('id')
+    .single();
+
+  if (reservationError || !reservation) {
+    throw new Error(
+      `Could not create room reservation: ${
+        reservationError?.message ?? 'Unknown error'
+      }`,
+    );
+  }
+
+  // Link the room booking to the shared reservation.
+  const { error: bookingError } = await supabase
+    .from('studyroom_bookings')
+    .insert({
       study_room_id: roomId,
       Date: date,
       start_time: startTime,
       end_time: endTime,
       status: 'active',
-    },
-  ]);
+      reservation_id: reservation.id,
+    });
 
-  if (error) {
-    throw new Error(`Could not create study room booking: ${error.message}`);
+  if (bookingError) {
+    throw new Error(
+      `Reservation ${reference} was created, but the room booking failed: ${bookingError.message}`,
+    );
   }
 }

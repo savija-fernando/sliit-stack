@@ -6,6 +6,7 @@ import {
   Animated,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -66,7 +67,11 @@ export default function SeatRoomSelectionScreen() {
     <SafeAreaView style={styles.container}>
       <AppHeader />
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Page heading */}
         <View style={styles.headingContainer}>
           <Pressable
@@ -202,7 +207,8 @@ export default function SeatRoomSelectionScreen() {
             Simple, convenient, and easy booking.
           </Text>
         </View>
-      </View>
+      
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -322,12 +328,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
 
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 26,
-    paddingBottom: 20,
-  },
+ content: {
+  flex: 1,
+  paddingHorizontal: 20,
+  paddingTop: 20,
+  paddingBottom: 12,
+},
+
+contentContainer: {
+  flexGrow: 1,
+  paddingBottom: 24,
+},
 
   headingContainer: {
     flexDirection: 'row',
@@ -543,9 +554,10 @@ const styles = StyleSheet.create({
   },
 
   bottomArea: {
-    marginTop: 'auto',
-    paddingTop: 25,
-  },
+  marginTop: 20,
+  paddingTop: 8,
+  paddingBottom: 12,
+},
 
   continueButton: {
     flexDirection: 'row',

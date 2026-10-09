@@ -2,7 +2,7 @@
   useCallback,
   useState,
 } from 'react';
-
+import { supabase } from '@/lib/supabase';
 import {
   Pressable,
   SafeAreaView,
@@ -40,6 +40,7 @@ import type {
 
 import {
   getAdminBookReservationById,
+  getAdminSeatReservationById,
 } from '@/features/reservations/services/adminBookReservationService';
 import { ActivityIndicator } from 'react-native';
 
@@ -81,19 +82,71 @@ useFocusEffect(
       const localReservation =
         getReservationById(reservationId);
 
-      // Preserve the existing seat reservation flow.
-      if (localReservation?.kind === 'seat') {
-        setReservation(localReservation);
-        setLoadingBook(false);
-        return;
-      }
+// Preserve existing local reservations.
+if (localReservation?.kind === 'seat') {
+  setReservation(localReservation);
+  setLoadingBook(false);
+  return;
+}
 
-      // Try loading a real book reservation from Supabase.
-      setLoadingBook(true);
+setLoadingBook(true);
 
-      try {
-        const bookReservation =
-          await getAdminBookReservationById(reservationId);
+try {
+  // Try loading a seat reservation from Supabase first.
+  const seatReservation =
+    await getAdminSeatReservationById(reservationId);
+
+  if (!isActive) return;
+
+  if (seatReservation) {
+    const { data: booking, error: bookingError } = await supabase
+      .from('seat_bookings')
+      .select('date, start_time, end_time')
+      .eq('reservation_id', reservationId)
+      .maybeSingle();
+
+    if (bookingError) {
+      throw new Error(
+        `Failed to load seat booking: ${bookingError.message}`,
+      );
+    }
+
+    const mappedSeatReservation: ReservationRecord = {
+      id: seatReservation.id,
+      title: seatReservation.seat_name,
+      author: 'Library Seating Area',
+      published: booking
+        ? `${booking.start_time} - ${booking.end_time}`
+        : 'Not available',
+      studentId: seatReservation.user_id,
+      universityId: seatReservation.university_id,
+      studentName: 'Student',
+      dateText: booking?.date ?? 'Date unavailable',
+      reservedOn: seatReservation.reserved_at
+        ? new Date(seatReservation.reserved_at).toLocaleString()
+        : 'Date unavailable',
+      pickupDate: booking?.date ?? 'Date unavailable',
+      dueDate: booking?.end_time ?? 'Not available',
+      status:
+        seatReservation.status.toLowerCase() === 'approved'
+          ? 'approved'
+          : seatReservation.status.toLowerCase() === 'rejected'
+            ? 'rejected'
+            : seatReservation.status.toLowerCase() === 'returned'
+              ? 'returned'
+              : seatReservation.status.toLowerCase() === 'expired'
+                ? 'expired'
+                : 'pending',
+      kind: 'seat',
+    };
+
+    setReservation(mappedSeatReservation);
+    return;
+  }
+
+  // If it's not a seat reservation, continue with the existing book flow.
+  const bookReservation =
+    await getAdminBookReservationById(reservationId);
 
         if (!isActive) return;
 
@@ -108,6 +161,7 @@ useFocusEffect(
           author: bookReservation.author,
           published: 'Not specified',
           studentId: bookReservation.user_id,
+          universityId: bookReservation.university_id,
           studentName: 'Student',
           dateText: bookReservation.reserved_at
             ? new Date(bookReservation.reserved_at)
@@ -383,6 +437,10 @@ if (loadingBook) {
               value={
                 reservation.studentName
               }
+            />
+            <InfoRow
+              label="University ID"
+              value={reservation.universityId ?? 'Not available'}
             />
 
             <InfoRow

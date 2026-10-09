@@ -48,6 +48,7 @@ import type {
 
 import {
   getAdminBookReservations,
+  getAdminSeatReservations,
 } from '@/features/reservations/services/adminBookReservationService';
 
 type QueueStatus =
@@ -188,14 +189,56 @@ const [bookReservationError, setBookReservationError] =
   [],
 );
 
+
+const loadAdminSeatReservations = useCallback(async () => {
+  try {
+    const seatReservations = await getAdminSeatReservations();
+
+    const mappedReservations: ReservationRecord[] =
+      seatReservations.map((item) => ({
+        id: item.id,
+        title: item.seat_name,
+        author: '',
+        studentId: item.user_id,
+        studentName: 'Student',
+        dateText: item.reserved_at
+          ? new Date(item.reserved_at).toLocaleDateString()
+          : 'Date unavailable',
+        status:
+          item.status.toLowerCase() === 'active'
+            ? 'pending'
+            : item.status.toLowerCase() as QueueStatus,
+        kind: 'seat',
+        published: '',
+        reservedOn: item.reserved_at ?? '',
+        pickupDate: '',
+        dueDate: '',
+      }));
+
+    setReservations((current) => [
+      ...current.filter((reservation) => reservation.kind !== 'seat'),
+      ...mappedReservations,
+    ]);
+  } catch (error) {
+    console.error('Failed to load seat reservations:', error);
+  }
+}, []);
+
+
 useFocusEffect(
   useCallback(() => {
     setReservations(getReservations());
 
     if (activeType === 'book') {
       loadAdminBookReservations();
+    } else if (activeType === 'seat') {
+      loadAdminSeatReservations();
     }
-  }, [activeType, loadAdminBookReservations]),
+  }, [
+    activeType,
+    loadAdminBookReservations,
+    loadAdminSeatReservations,
+  ]),
 );
 
   const handleSearch = () => {

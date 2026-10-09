@@ -97,11 +97,21 @@ export default function ReservationDetailsScreen() {
     );
   }
 
-  const bookTitle =
-    reservation.book?.title ?? 'Book Reservation';
 
-  const bookLocation =
-    reservation.book?.location ?? 'Main Library';
+const displayTitle =
+  reservation.reservationType === 'BOOK'
+    ? reservation.book?.title ?? 'Book Reservation'
+    : reservation.reservationType === 'SEAT'
+      ? reservation.seat?.name ?? 'Seat Reservation'
+      : reservation.room?.name ?? 'Study Room Reservation';
+
+const displayLocation =
+  reservation.reservationType === 'BOOK'
+    ? reservation.book?.location ?? 'Main Library'
+    : reservation.reservationType === 'SEAT'
+      ? 'Library Seating Area'
+      : reservation.room?.location ?? 'Study Room';
+
 
   const reservationType =
     reservation.reservationType === 'BOOK'
@@ -110,13 +120,27 @@ export default function ReservationDetailsScreen() {
         ? 'Seat'
         : 'Room';
 
-  const formattedDate = new Date(
-    reservation.reservedAt
-  ).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
+
+const dateToDisplay =
+  reservation.bookingDate ?? reservation.reservedAt;
+
+const formattedDate = new Date(
+  `${dateToDisplay.slice(0, 10)}T12:00:00`
+).toLocaleDateString('en-GB', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
+
+const formatTime = (time: string | null | undefined) => {
+  if (!time) return null;
+
+  const [hours, minutes] = time.split(':');
+  const hour = Number(hours);
+
+  return `${hour % 12 || 12}:${minutes} ${hour >= 12 ? 'PM' : 'AM'}`;
+};
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -144,12 +168,12 @@ export default function ReservationDetailsScreen() {
 
             <View style={styles.titleArea}>
               <Text style={styles.title}>
-                {bookTitle}
-              </Text>
+  {displayTitle}
+</Text>
 
-              <Text style={styles.location}>
-                {bookLocation}
-              </Text>
+<Text style={styles.location}>
+  {displayLocation}
+</Text>
             </View>
 
             <View
@@ -187,11 +211,26 @@ export default function ReservationDetailsScreen() {
             label="Reservation Date"
             value={formattedDate}
           />
+          
+{reservation.reservationType !== 'BOOK' && (
+  <>
+    <DetailRow
+      label="Start Time"
+      value={formatTime(reservation.startTime) ?? 'Not available'}
+    />
+
+    <DetailRow
+      label="End Time"
+      value={formatTime(reservation.endTime) ?? 'Not available'}
+    />
+  </>
+)}
+
 
           <DetailRow
-            label="Location"
-            value={bookLocation}
-          />
+  label="Location"
+  value={displayLocation}
+/>
 
           <DetailRow
             label="Status"

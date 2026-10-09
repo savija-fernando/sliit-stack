@@ -34,7 +34,9 @@ import {
 
 import {
   getAdminBookReservationById,
+  getAdminSeatReservationById,
   updateAdminBookReservationStatus,
+  updateAdminSeatReservationStatus,
 } from '@/features/reservations/services/adminBookReservationService';
 
 import type { ReservationRecord } from '@/features/reservations/types/reservation';
@@ -69,74 +71,108 @@ useFocusEffect(
   useCallback(() => {
     let isActive = true;
 
-    const loadReservation = async () => {
-      const localReservation = getReservationById(reservationId);
 
-      // Preserve the existing seat reservation flow.
-      if (localReservation?.kind === 'seat') {
-        setReservation(localReservation);
-        setLoadingBook(false);
-        return;
-      }
+const loadReservation = async () => {
+  const localReservation = getReservationById(reservationId);
 
-      setLoadingBook(true);
+  if (localReservation?.kind === 'seat') {
+    setReservation(localReservation);
+    setLoadingBook(false);
+    return;
+  }
 
-      try {
-        const bookReservation =
-          await getAdminBookReservationById(reservationId);
+  setLoadingBook(true);
 
-        if (!isActive) return;
+  try {
+    // First, check Supabase for a seat reservation.
+    const seatReservation =
+      await getAdminSeatReservationById(reservationId);
 
-        if (!bookReservation) {
-          setReservation(localReservation);
-          return;
-        }
+    if (!isActive) return;
 
-        const dbStatus = bookReservation.status.toLowerCase();
+    if (seatReservation) {
+      const mappedSeatReservation: ReservationRecord = {
+        id: seatReservation.id,
+        title: seatReservation.seat_name,
+        author: 'Library Seat',
+        published: 'Not specified',
+        studentId: seatReservation.user_id,
+        studentName: 'Student',
+        dateText: seatReservation.reserved_at
+          ? new Date(seatReservation.reserved_at).toLocaleDateString()
+          : 'Date unavailable',
+        reservedOn: seatReservation.reserved_at
+          ? new Date(seatReservation.reserved_at).toLocaleString()
+          : 'Date unavailable',
+        pickupDate: 'Not assigned',
+        dueDate: 'Not assigned',
+        status: getInitialStatus(
+          seatReservation.status.toLowerCase(),
+        ),
+        kind: 'seat',
+      };
 
-        const mappedReservation: ReservationRecord = {
-          id: bookReservation.id,
-          title: bookReservation.title,
-          author: bookReservation.author,
-          published: 'Not specified',
-          studentId: bookReservation.user_id,
-          studentName: 'Student',
-          dateText: bookReservation.reserved_at
-            ? new Date(bookReservation.reserved_at).toLocaleDateString()
-            : 'Date unavailable',
-          reservedOn: bookReservation.reserved_at
-            ? new Date(bookReservation.reserved_at).toLocaleString()
-            : 'Date unavailable',
-          pickupDate: 'Not assigned',
-          dueDate: 'Not assigned',
-          status:
-            dbStatus === 'approved'
-              ? 'approved'
-              : dbStatus === 'rejected'
-                ? 'rejected'
-                : dbStatus === 'returned'
-                  ? 'returned'
-                  : dbStatus === 'expired'
-                    ? 'expired'
-                    : 'pending',
-          kind: 'book',
-        };
+      setReservation(mappedSeatReservation);
+      return;
+    }
 
-        setReservation(mappedReservation);
-      } catch (error) {
-        if (!isActive) return;
+    // If no seat reservation exists, try a book reservation.
+    const bookReservation =
+      await getAdminBookReservationById(reservationId);
 
-        setUpdateError(
-          error instanceof Error
-            ? error.message
-            : 'Failed to load reservation.',
-        );
+    if (!isActive) return;
 
-        setReservation(localReservation);
-      } finally {
-        if (isActive) setLoadingBook(false);
-      }
+    if (!bookReservation) {
+      setReservation(localReservation);
+      return;
+    }
+
+    const dbStatus = bookReservation.status.toLowerCase();
+
+    const mappedBookReservation: ReservationRecord = {
+      id: bookReservation.id,
+      title: bookReservation.title,
+      author: bookReservation.author,
+      published: 'Not specified',
+      studentId: bookReservation.user_id,
+      studentName: 'Student',
+      dateText: bookReservation.reserved_at
+        ? new Date(bookReservation.reserved_at).toLocaleDateString()
+        : 'Date unavailable',
+      reservedOn: bookReservation.reserved_at
+        ? new Date(bookReservation.reserved_at).toLocaleString()
+        : 'Date unavailable',
+      pickupDate: 'Not assigned',
+      dueDate: 'Not assigned',
+      status:
+        dbStatus === 'approved'
+          ? 'approved'
+          : dbStatus === 'rejected'
+            ? 'rejected'
+            : dbStatus === 'returned'
+              ? 'returned'
+              : dbStatus === 'expired'
+                ? 'expired'
+                : 'pending',
+      kind: 'book',
     };
+
+    setReservation(mappedBookReservation);
+  } catch (error) {
+    if (!isActive) return;
+
+    setUpdateError(
+      error instanceof Error
+        ? error.message
+        : 'Failed to load reservation.',
+    );
+
+    setReservation(localReservation);
+  } finally {
+    if (isActive) setLoadingBook(false);
+  }
+};
+
 
     loadReservation();
 
@@ -289,13 +325,19 @@ const handleUpdate = async () => {
         reservationId,
         statusMap[selectedStatus],
       );
-    } else {
-      updateReservation(
-        reservationId,
-        selectedStatus,
-        note.trim(),
-      );
-    }
+} else {
+  if (
+    selectedStatus !== 'approved' &&
+    selectedStatus !== 'rejected'
+  ) {
+    throw new Error('Invalid seat reservation status.');
+  }
+
+  await updateAdminSeatReservationStatus(
+    reservationId,
+    selectedStatus === 'approved' ? 'Approved' : 'Rejected',
+  );
+}
 
     router.replace(
       `/reservation-details?id=${reservationId}` as Href,

@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   ActivityIndicator,
   Alert,
@@ -24,12 +25,18 @@ import {
 
 export default function ModifyReservationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const [reservation, setReservation] =
     useState<Reservation | null>(null);
 
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+
+const [date, setDate] = useState('');
+const [time, setTime] = useState('');
+const [endTime, setEndTime] = useState('');
+const [activeTimePicker, setActiveTimePicker] =
+  useState<'start' | 'end' | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -49,22 +56,43 @@ export default function ModifyReservationScreen() {
 
       setReservation(data);
 
-      const reservationDate = new Date(data.reservedAt);
+      
+if (data.reservationType === 'BOOK') {
+  const reservationDate = new Date(data.reservedAt);
 
-      setDate(
-        reservationDate.toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
-      );
+  setDate(
+    reservationDate.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+  );
 
-      setTime(
-        reservationDate.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      );
+  setTime(
+    reservationDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  );
+  setEndTime(data.endTime?.slice(0, 5) ?? '');
+} else {
+  const dateValue = data.bookingDate;
+
+  if (dateValue) {
+    const [year, month, day] = dateValue.split('-');
+    const monthNames = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+
+    setDate(`${day} ${monthNames[Number(month) - 1]} ${year}`);
+  } else {
+    setDate('');
+  }
+
+  setTime(data.startTime?.slice(0, 5) ?? '');
+}
+
     } catch (error) {
       console.error('Failed to load reservation:', error);
 
@@ -85,80 +113,122 @@ export default function ModifyReservationScreen() {
     }, [id])
   );
 
+
 const handleUpdate = async () => {
-  if (!reservation) {
-    return;
-  }
+  if (!reservation) return;
 
   try {
     setSaving(true);
-
-    const currentDate = new Date(reservation.reservedAt);
 
     const parts = date.trim().split(' ');
 
     if (parts.length !== 3) {
       throw new Error(
-        'Please enter the date in this format: 06 Oct 2026'
+        'Please enter the date in this format: 17 Oct 2026'
       );
     }
 
     const day = Number(parts[0]);
-    const monthName = parts[1];
+    const monthName =
+      parts[1].charAt(0).toUpperCase() +
+      parts[1].slice(1, 3).toLowerCase();
     const year = Number(parts[2]);
 
-    const months: Record<string, number> = {
-      Jan: 0,
-      Feb: 1,
-      Mar: 2,
-      Apr: 3,
-      May: 4,
-      Jun: 5,
-      Jul: 6,
-      Aug: 7,
-      Sep: 8,
-      Oct: 9,
-      Nov: 10,
-      Dec: 11,
+    const months: Record<string, string> = {
+      Jan: '01',
+      Feb: '02',
+      Mar: '03',
+      Apr: '04',
+      May: '05',
+      Jun: '06',
+      Jul: '07',
+      Aug: '08',
+      Sep: '09',
+      Oct: '10',
+      Nov: '11',
+      Dec: '12',
     };
 
     const month = months[monthName];
 
     if (
-      Number.isNaN(day) ||
-      Number.isNaN(year) ||
-      month === undefined
+      !Number.isInteger(day) ||
+      day < 1 ||
+      day > 31 ||
+      !Number.isInteger(year) ||
+      !month
     ) {
-      throw new Error(
-        'Invalid date. Please use: 06 Oct 2026'
-      );
+      throw new Error('Invalid date. Use the format: 17 Oct 2026');
     }
 
-    const updatedDate = new Date(currentDate);
+    const bookingDate =
+      `${year}-${month}-${String(day).padStart(2, '0')}`;
 
-    updatedDate.setFullYear(year);
-    updatedDate.setMonth(month);
-    updatedDate.setDate(day);
+    // Validate that the date is a real calendar date.
+    const checkDate = new Date(`${bookingDate}T12:00:00`);
 
-    await updateReservation(reservation.id, {
-      reservedAt: updatedDate.toISOString(),
-    });
+    if (
+      checkDate.getFullYear() !== year ||
+      checkDate.getMonth() !== Number(month) - 1 ||
+      checkDate.getDate() !== day
+    ) {
+      throw new Error('Please enter a valid calendar date.');
+    }
+
+    if (reservation.reservationType === 'BOOK') {
+      const currentDate = new Date(reservation.reservedAt);
+      currentDate.setFullYear(year, Number(month) - 1, day);
+
+      await updateReservation(reservation.id, {
+        reservedAt: currentDate.toISOString(),
+      });
+    } else {
+      const timeMatch = time.trim().match(/^(\d{1,2}):(\d{2})$/);
+
+      if (
+        !timeMatch ||
+        Number(timeMatch[1]) > 23 ||
+        Number(timeMatch[2]) > 59
+      ) {
+        throw new Error('Enter the start time in 24-hour format, e.g. 14:00.');
+      }
+
+      const startTime =
+        `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}:00`;
+
+      
+const endMatch = endTime.trim().match(/^(\d{1,2}):(\d{2})$/);
+
+if (
+  !endMatch ||
+  Number(endMatch[1]) > 23 ||
+  Number(endMatch[2]) > 59
+) {
+  throw new Error('Please select a valid end time.');
+}
+
+const formattedEndTime =
+  `${endMatch[1].padStart(2, '0')}:${endMatch[2]}:00`;
+
+if (formattedEndTime <= startTime) {
+  throw new Error('End time must be later than start time.');
+}
+
+await updateReservation(reservation.id, {
+  bookingDate,
+  startTime,
+  endTime: formattedEndTime,
+});
+
+    }
 
     Alert.alert(
       'Reservation Updated',
       'Your reservation has been updated successfully.',
-      [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]
+      [{ text: 'OK', onPress: () => router.back() }]
     );
   } catch (error) {
-    console.error(
-      'Failed to update reservation:',
-      error
-    );
+    console.error('Failed to update reservation:', error);
 
     Alert.alert(
       'Update Failed',
@@ -170,6 +240,7 @@ const handleUpdate = async () => {
     setSaving(false);
   }
 };
+
 
   if (loading) {
     return (
@@ -220,44 +291,162 @@ const handleUpdate = async () => {
           Modify Reservation
         </Text>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.bookTitle}>
-            {reservation.book?.title ??
-              'Book Reservation'}
-          </Text>
+        
+<View style={styles.summaryCard}>
+  <Text style={styles.bookTitle}>
+    {reservation.reservationType === 'BOOK'
+      ? reservation.book?.title ?? 'Book Reservation'
+      : reservation.reservationType === 'SEAT'
+        ? reservation.seat?.name ?? 'Seat Reservation'
+        : reservation.room?.name ?? 'Study Room Reservation'}
+  </Text>
 
-          <Text style={styles.bookMeta}>
-            {reservation.book?.location ??
-              'Main Library'}{' '}
-            · Book Reservation
-          </Text>
-        </View>
+  <Text style={styles.bookMeta}>
+    {reservation.reservationType === 'BOOK'
+      ? reservation.book?.location ?? 'Main Library'
+      : reservation.reservationType === 'SEAT'
+        ? 'Library Seating Area'
+        : reservation.room?.location ?? 'Study Room'}
+    {' · '}
+    {reservation.reservationType === 'BOOK'
+      ? 'Book Reservation'
+      : reservation.reservationType === 'SEAT'
+        ? 'Seat Reservation'
+        : 'Room Reservation'}
+  </Text>
+</View>
 
-        <View style={styles.group}>
-          <Text style={styles.label}>
-            Reservation Date
-          </Text>
 
-          <TextInput
-            style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="Select reservation date"
-          />
-        </View>
+        
+<View style={styles.group}>
+  <Text style={styles.label}>
+    Reservation Date
+  </Text>
 
-        <View style={styles.group}>
-          <Text style={styles.label}>
-            Reservation Time
-          </Text>
+  <Pressable
+    style={styles.input}
+    onPress={() => setShowDatePicker(true)}
+  >
+    <Text style={{ color: date ? '#111827' : '#9CA3AF', fontSize: 15 }}>
+      {date || 'Select reservation date'}
+    </Text>
+  </Pressable>
 
-          <TextInput
-            style={styles.input}
-            value={time}
-            onChangeText={setTime}
-            placeholder="Select reservation time"
-          />
-        </View>
+  {showDatePicker && (
+    <DateTimePicker
+      value={
+        date
+          ? (() => {
+              const [day, monthName, year] = date.split(' ');
+              const months: Record<string, number> = {
+                Jan: 0, Feb: 1, Mar: 2, Apr: 3,
+                May: 4, Jun: 5, Jul: 6, Aug: 7,
+                Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+              };
+              return new Date(
+                Number(year),
+                months[monthName] ?? 0,
+                Number(day),
+                12
+              );
+            })()
+          : new Date()
+      }
+      mode="date"
+      display="default"
+      onChange={(event, selectedDate) => {
+        setShowDatePicker(false);
+
+        if (event.type === 'set' && selectedDate) {
+          setDate(
+            `${String(selectedDate.getDate()).padStart(2, '0')} ${
+              selectedDate.toLocaleDateString('en-GB', {
+                month: 'short',
+              })
+            } ${selectedDate.getFullYear()}`
+          );
+        }
+      }}
+    />
+  )}
+</View>
+
+
+        
+{reservation.reservationType !== 'BOOK' && (
+  <>
+    <View style={styles.group}>
+      <Text style={styles.label}>Start Time</Text>
+
+      <Pressable
+        style={styles.input}
+        onPress={() => setActiveTimePicker('start')}
+      >
+        <Text style={{ color: time ? '#111827' : '#9CA3AF', fontSize: 15 }}>
+          {time || 'Select start time'}
+        </Text>
+      </Pressable>
+
+      {activeTimePicker === 'start' && (
+        <DateTimePicker
+          value={(() => {
+            const [hours, minutes] = (time || '08:00').split(':');
+            const value = new Date();
+            value.setHours(Number(hours), Number(minutes), 0, 0);
+            return value;
+          })()}
+          mode="time"
+          display="default"
+          onChange={(event, selectedTime) => {
+            setActiveTimePicker(null);
+
+            if (event.type === 'set' && selectedTime) {
+              setTime(
+                `${String(selectedTime.getHours()).padStart(2, '0')}:${String(selectedTime.getMinutes()).padStart(2, '0')}`
+              );
+            }
+          }}
+        />
+      )}
+    </View>
+
+    <View style={styles.group}>
+      <Text style={styles.label}>End Time</Text>
+
+      <Pressable
+        style={styles.input}
+        onPress={() => setActiveTimePicker('end')}
+      >
+        <Text style={{ color: endTime ? '#111827' : '#9CA3AF', fontSize: 15 }}>
+          {endTime || 'Select end time'}
+        </Text>
+      </Pressable>
+
+      {activeTimePicker === 'end' && (
+        <DateTimePicker
+          value={(() => {
+            const [hours, minutes] = (endTime || '10:00').split(':');
+            const value = new Date();
+            value.setHours(Number(hours), Number(minutes), 0, 0);
+            return value;
+          })()}
+          mode="time"
+          display="default"
+          onChange={(event, selectedTime) => {
+            setActiveTimePicker(null);
+
+            if (event.type === 'set' && selectedTime) {
+              setEndTime(
+                `${String(selectedTime.getHours()).padStart(2, '0')}:${String(selectedTime.getMinutes()).padStart(2, '0')}`
+              );
+            }
+          }}
+        />
+      )}
+    </View>
+  </>
+)}
+
 
         <Pressable
           style={[
