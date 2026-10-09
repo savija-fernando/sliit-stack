@@ -1,17 +1,12 @@
-import { useState } from 'react';
-import { useRouter, type Href } from 'expo-router';
-import {
-  Image,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
 
-type UserRole = 'student' | 'staff';
+import { useState } from 'react';
+import { Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRouter, type Href } from 'expo-router';
+
+import {
+  login,
+  type UserRole,
+} from '@/features/auth/services/authService';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -19,6 +14,7 @@ export default function LoginScreen() {
   const [role, setRole] = useState<UserRole>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const isStudent = role === 'student';
 
@@ -26,6 +22,43 @@ export default function LoginScreen() {
     setRole(newRole);
     setEmail('');
     setPassword('');
+  };
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      Alert.alert(
+        'Missing Information',
+        'Please enter your email and password.'
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const user = await login(
+        email,
+        password,
+        role
+      );
+
+      if (user.role === 'staff') {
+        router.replace('/staff-dashboard');
+      } else {
+        router.replace('/');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+
+      Alert.alert(
+        'Login Failed',
+        error instanceof Error
+          ? error.message
+          : 'Unable to log in. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -62,6 +95,7 @@ export default function LoginScreen() {
                   isStudent && styles.activeRoleButton,
                 ]}
                 onPress={() => changeRole('student')}
+                disabled={loading}
               >
                 <Text
                   style={[
@@ -79,6 +113,7 @@ export default function LoginScreen() {
                   !isStudent && styles.activeRoleButton,
                 ]}
                 onPress={() => changeRole('staff')}
+                disabled={loading}
               >
                 <Text
                   style={[
@@ -118,6 +153,7 @@ export default function LoginScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
+              editable={!loading}
             />
 
             <Text style={styles.label}>
@@ -131,17 +167,25 @@ export default function LoginScreen() {
               placeholder="Enter password"
               placeholderTextColor="#9A9A9A"
               secureTextEntry
+              editable={!loading}
             />
 
-            <Pressable>
+            <Pressable disabled={loading}>
               <Text style={styles.forgotPassword}>
                 Forgot Password?
               </Text>
             </Pressable>
 
-            <Pressable style={styles.loginButton}>
+            <Pressable
+              style={[
+                styles.loginButton,
+                loading && styles.disabledLoginButton,
+              ]}
+              onPress={handleLogin}
+              disabled={loading}
+            >
               <Text style={styles.loginButtonText}>
-                Login
+                {loading ? 'Logging in...' : 'Login'}
               </Text>
             </Pressable>
 
@@ -154,6 +198,7 @@ export default function LoginScreen() {
                 onPress={() =>
                   router.push('/signup' as Href)
                 }
+                disabled={loading}
               >
                 <Text style={styles.signupLink}>
                   Sign Up
@@ -298,6 +343,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  disabledLoginButton: {
+    opacity: 0.6,
   },
 
   loginButtonText: {

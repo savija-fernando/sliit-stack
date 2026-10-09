@@ -13,7 +13,9 @@ function TabIcon({
   children: React.ReactNode;
 }) {
   return (
-    <View style={[styles.pill, focused && styles.pillActive]}>{children}</View>
+    <View style={[styles.pill, focused && styles.pillActive]}>
+      {children}
+    </View>
   );
 }
 
@@ -28,6 +30,7 @@ export default function AppTabs() {
         tabBarStyle: styles.tabBar,
       }}
     >
+      {/* MAIN NAVIGATION */}
       <Tabs.Screen
         name="index"
         options={{
@@ -39,6 +42,7 @@ export default function AppTabs() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="books"
         options={{
@@ -50,6 +54,7 @@ export default function AppTabs() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="seats"
         options={{
@@ -61,6 +66,7 @@ export default function AppTabs() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="reservations"
         options={{
@@ -72,6 +78,7 @@ export default function AppTabs() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="profile"
         options={{
@@ -83,11 +90,66 @@ export default function AppTabs() {
           ),
         }}
       />
+
+      {/* HIDDEN ROUTES */}
+      <Tabs.Screen
+        name="login"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="signup"
+        options={{ href: null }}
+      />
+
       <Tabs.Screen
         name="notifications"
-        options={{
-          href: null,
-        }}
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="reservation-details"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="update-reservation"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="staff-dashboard"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="staff-profile"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="staff-queues"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="expired-reservations"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="issue-details"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="issue-monitoring"
+        options={{ href: null }}
+      />
+
+      <Tabs.Screen
+        name="update-issue"
+        options={{ href: null }}
       />
     </Tabs>
   );
@@ -100,7 +162,12 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
     paddingTop: 6,
   },
-  label: { fontSize: 11, fontWeight: '700' },
+
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
   pill: {
     width: 56,
     height: 30,
@@ -108,5 +175,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pillActive: { backgroundColor: PILL },
+
+  pillActive: {
+    backgroundColor: PILL,
+  },
 });
