@@ -14,8 +14,8 @@ import { Calendar, DateData } from 'react-native-calendars';
 import AppHeader from '@/components/AppHeader';
 
 const TIME_SLOTS = [
-  { label: '08:00 AM – 10:00 AM', start: '08:00', end: '10:00' },
-  { label: '10:00 AM – 12:00 PM', start: '10:00', end: '12:00' },
+  { label: '08:00 AM – 12:00 PM', start: '08:00', end: '12:00' },
+  { label: '12:00 PM – 04:00 PM', start: '12:00', end: '16:00' },
 ];
 
 function getDuration(startTime: string, endTime: string): string {

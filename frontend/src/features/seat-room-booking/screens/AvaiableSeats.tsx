@@ -104,7 +104,7 @@ export default function AvailableSeats() {
     }
 
     router.push({
-      pathname: '/rules',
+      pathname: '/seat-details',
       params: {
         type: 'seat',
         date: params.date ?? '',
