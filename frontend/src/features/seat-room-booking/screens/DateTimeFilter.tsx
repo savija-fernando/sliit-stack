@@ -14,9 +14,25 @@ import { Calendar, DateData } from 'react-native-calendars';
 import AppHeader from '@/components/AppHeader';
 
 const TIME_SLOTS = [
-  { label: '08:00 AM-12:00 AM', start: '08:00', end: '12:00' },
-  { label: '12:00 AM-4:00 PM', start: '10:00', end: '12:00' },
+  { label: '08:00 AM – 10:00 AM', start: '08:00', end: '10:00' },
+  { label: '10:00 AM – 12:00 PM', start: '10:00', end: '12:00' },
 ];
+
+function getDuration(startTime: string, endTime: string): string {
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
+  const minutes =
+    endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  return [
+    hours ? `${hours} ${hours === 1 ? 'hour' : 'hours'}` : '',
+    remainingMinutes ? `${remainingMinutes} minutes` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
 
 /*
  * Convert Date into YYYY-MM-DD
@@ -144,6 +160,14 @@ export default function DateTimeSelectionScreen() {
       return;
     }
 
+    const selectedSlot = TIME_SLOTS.find(
+      (slot) => slot.label === selectedTime,
+    );
+    if (!selectedSlot) {
+      Alert.alert('Invalid time', 'Please select an available time slot again.');
+      return;
+    }
+
     /*
      * SEAT
      */
@@ -152,9 +176,9 @@ export default function DateTimeSelectionScreen() {
       params: {
         ...routeParams,
         type: 'seat',
-        startTime: TIME_SLOTS.find((slot) => slot.label === selectedTime)?.start,
-        endTime: TIME_SLOTS.find((slot) => slot.label === selectedTime)?.end,
-        duration: '2 hours',
+        startTime: selectedSlot.start,
+        endTime: selectedSlot.end,
+        duration: getDuration(selectedSlot.start, selectedSlot.end),
       },
     });
   };
