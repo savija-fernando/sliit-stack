@@ -11,24 +11,14 @@ export type StudyRoomBasic = {
 };
 
 /**
- * Returns true when the varchar is_active column should be treated as active.
- * Inactive only if the value is explicitly 'false' or '0'.
- * NULL / empty / any other value → active.
- */
-function isActiveRoom(raw: unknown): boolean {
-  if (typeof raw !== 'string') return true; // NULL → active
-  const v = raw.trim().toLowerCase();
-  return v !== 'false' && v !== '0';
-}
-
-/**
- * Fetch all active study rooms from the studyrooms table.
- * is_active is varchar, so we filter client-side.
+ * Fetch study rooms whose condition is Good from the studyrooms table.
  */
 export async function getAllStudyRooms(): Promise<StudyRoomBasic[]> {
   const { data, error } = await supabase
     .from('studyrooms')
-    .select('*')
+    .select(
+      'id, name, location, condition, description, available_from, available_until',
+    )
     .order('name', { ascending: true });
 
   if (error) {
@@ -37,7 +27,11 @@ export async function getAllStudyRooms(): Promise<StudyRoomBasic[]> {
 
   return (data ?? [])
     .map((row) => row as Record<string, unknown>)
-    .filter((r) => isActiveRoom(r.is_active))
+    .filter(
+      (r) =>
+        typeof r.condition === 'string' &&
+        r.condition.trim().toLowerCase() === 'good',
+    )
     .map((r) => ({
       id: String(r.id ?? ''),
       name: typeof r.name === 'string' ? r.name : '',

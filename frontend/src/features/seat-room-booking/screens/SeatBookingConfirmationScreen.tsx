@@ -6,7 +6,18 @@ import AppHeader from '@/components/AppHeader';
 
 export default function SeatBookingConfirmationScreen() {
   const router = useRouter();
-  const { date, time, startTime, endTime, duration, seats } = useLocalSearchParams<{
+  const {
+    type,
+    roomName,
+    date,
+    time,
+    startTime,
+    endTime,
+    duration,
+    seats,
+  } = useLocalSearchParams<{
+    type?: string;
+    roomName?: string;
     date?: string;
     time?: string;
     startTime?: string;
@@ -14,14 +25,50 @@ export default function SeatBookingConfirmationScreen() {
     duration?: string;
     seats?: string;
   }>();
+  const isRoomBooking = type === 'room';
 
   const seatList = (seats ?? '')
     .split(',')
     .map((seat) => seat.trim())
     .filter(Boolean);
 
+  const formatDate = (value?: string) => {
+    if (!value) return 'Not selected';
+    const parsedDate = new Date(`${value}T00:00:00`);
+    return Number.isNaN(parsedDate.getTime())
+      ? value
+      : parsedDate.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+  };
+
+  const formatDuration = () => {
+    const start = toMinutes(startTime);
+    const end = toMinutes(endTime);
+    if (start !== null && end !== null && end > start) {
+      const minutes = end - start;
+      const hoursPart = Math.floor(minutes / 60);
+      const minutesPart = minutes % 60;
+      return [
+        hoursPart ? `${hoursPart} ${hoursPart === 1 ? 'hour' : 'hours'}` : '',
+        minutesPart ? `${minutesPart} minutes` : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+    }
+    return duration?.trim() || 'Not selected';
+  };
+
+  const formatTime = () => {
+    if (time?.trim()) return time.trim();
+    if (startTime && endTime) return `${startTime} – ${endTime}`;
+    return 'Not selected';
+  };
+
   const handleDone = () => {
-    router.dismissTo('/seats');
+    router.dismissTo(isRoomBooking ? '/study-room-picker' : '/seats');
   };
 
   return (
@@ -33,17 +80,28 @@ export default function SeatBookingConfirmationScreen() {
           <MaterialCommunityIcons name="check" size={52} color="#FFFFFF" />
         </View>
 
-        <Text style={styles.title}>Reservation confirmed</Text>
-        <Text style={styles.subtitle}>Your study space is ready.</Text>
+        <Text style={styles.title}>
+          {isRoomBooking ? 'Study room booking confirmed' : 'Reservation confirmed'}
+        </Text>
+        <Text style={styles.subtitle}>
+          {isRoomBooking
+            ? 'Your study room is reserved.'
+            : 'Your study space is ready.'}
+        </Text>
 
         <View style={styles.infoCard}>
-          <InfoRow label="Date" value={date ?? 'Not selected'} />
-          <InfoRow label="Time" value={time ?? 'Not selected'} />
-          <InfoRow label="Duration" value={duration ?? 'Not selected'} />
-          <InfoRow
-            label="Seat(s)"
-            value={seatList.length ? seatList.join(', ') : 'Not selected'}
-          />
+          {isRoomBooking ? (
+            <InfoRow label="Study room" value={roomName?.trim() || 'Not specified'} />
+          ) : null}
+          <InfoRow label="Date" value={formatDate(date)} />
+          <InfoRow label="Time" value={formatTime()} />
+          <InfoRow label="Duration" value={formatDuration()} />
+          {!isRoomBooking ? (
+            <InfoRow
+              label="Seat(s)"
+              value={seatList.length ? seatList.join(', ') : 'Not selected'}
+            />
+          ) : null}
         </View>
 
         <Pressable
@@ -59,6 +117,17 @@ export default function SeatBookingConfirmationScreen() {
       </View>
     </SafeAreaView>
   );
+}
+
+function toMinutes(value?: string) {
+  if (!value) return null;
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -92,6 +161,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   title: {
+    textAlign: 'center',
     fontSize: 24,
     fontWeight: '700',
     color: '#111827',
@@ -100,6 +170,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     color: '#64748B',
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
   infoCard: {
     width: '100%',

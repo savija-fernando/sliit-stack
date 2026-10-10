@@ -61,7 +61,12 @@ export async function getAdminResources(): Promise<{
   seats: AdminSeat[];
 }> {
   const [roomsResult, seatsResult] = await Promise.all([
-    supabase.from('studyrooms').select('*').order('created_at', { ascending: false }),
+    supabase
+      .from('studyrooms')
+      .select(
+        'id, name, location, description, condition, available_from, available_until, created_at',
+      )
+      .order('created_at', { ascending: false }),
     supabase.from('seats').select('*').order('created_at', { ascending: false }),
   ]);
 

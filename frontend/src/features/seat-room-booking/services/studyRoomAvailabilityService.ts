@@ -125,7 +125,11 @@ export async function getAvailableStudyRooms({
   const requested = parseRequestedTime(time, duration);
 
   const [roomsResult, bookingsResult] = await Promise.all([
-    supabase.from('studyrooms').select('*'),
+    supabase
+      .from('studyrooms')
+      .select(
+        'id, name, location, condition, description, available_from, available_until, is_active',
+      ),
     supabase
       .from('studyroombookings')
       .select('*')
