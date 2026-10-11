@@ -396,7 +396,7 @@ function FormField({
   value: string;
   onChangeText: (value: string) => void;
   multiline?: boolean;
-  keyboardType?: 'default' | 'number-pad';
+  keyboardType?: 'default' | 'number-pad' | 'url';
   autoCapitalize?: 'none' | 'words' | 'sentences' | 'characters';
   required?: boolean;
 }) {

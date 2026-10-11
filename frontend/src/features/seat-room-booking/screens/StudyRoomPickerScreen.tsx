@@ -61,11 +61,15 @@ export default function StudyRoomPickerScreen() {
     if (!room) return;
 
     router.push({
-      pathname: '/study-room-calendar',
+      pathname: '/study-room-details',
       params: {
         roomId: room.id,
         roomName: room.name,
         roomLocation: room.location,
+        roomCondition: room.condition,
+        roomDescription: room.description,
+        availableFrom: room.available_from ?? '',
+        availableUntil: room.available_until ?? '',
       },
     });
   };
@@ -104,7 +108,7 @@ export default function StudyRoomPickerScreen() {
             </View>
             <Text style={styles.title}>Choose a room</Text>
             <Text style={styles.subtitle}>
-              Select a study room to book. You'll pick your date and time next.
+              Select a study room to review its details before booking.
             </Text>
           </View>
         </View>
@@ -175,14 +179,14 @@ export default function StudyRoomPickerScreen() {
               pressed && styles.continueButtonPressed,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Continue to date selection"
+            accessibilityLabel="Continue to study room details"
           >
             <MaterialCommunityIcons
               name="calendar-arrow-right"
               size={20}
               color="#FFFFFF"
             />
-            <Text style={styles.continueText}>Select Date & Time</Text>
+            <Text style={styles.continueText}>View Room Details</Text>
             <MaterialCommunityIcons
               name="arrow-right"
               size={20}
