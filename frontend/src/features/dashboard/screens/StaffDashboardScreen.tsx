@@ -30,6 +30,10 @@ export default function StaffDashboardScreen() {
   router.push('/add-book' as Href);
 };
 
+const openSeatStudyRoomAdmin = () => {
+  router.push('/admin-seat-studyroom' as Href);
+};
+
   const openBookRequests = () => {
     router.push(
       '/staff-queues?type=book' as Href,
@@ -110,6 +114,24 @@ export default function StaffDashboardScreen() {
                 Add New Book
               </Text>
             </TouchableOpacity>
+
+  
+            <TouchableOpacity
+              style={styles.addBookButton}
+              onPress={openSeatStudyRoomAdmin}
+              activeOpacity={0.8}
+            >
+              <MaterialCommunityIcons
+                name="seat"
+                size={22}
+                color="#FFFFFF"
+              />
+
+              <Text style={styles.addBookButtonText}>
+                Manage Seats & Study Rooms
+              </Text>
+            </TouchableOpacity>
+
 
           {/* Overview */}
           <View style={styles.sectionHeader}>

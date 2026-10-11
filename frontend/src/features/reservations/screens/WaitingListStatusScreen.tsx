@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+
+import { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
@@ -8,47 +10,78 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 
-type WaitingStatus = 'Active' | 'Ready';
+import {
+  getMyWaitingLists,
+  leaveWaitingList as leaveWaitingListService,
+} from '@/features/book-reservation/services/bookService';
+
+type WaitingStatus = 'Waiting' | 'Ready';
 
 type WaitingItem = {
-  id: string;
-  title: string;
+  bookId: string;
   position: number;
-  estimatedWait: string;
   status: WaitingStatus;
+  estimatedDays?: number;
+  collectBy?: string;
+  book: {
+    title: string;
+    author?: string;
+  };
 };
 
-const initialWaitingLists: WaitingItem[] = [
-  {
-    id: '1',
-    title: 'Clean Code',
-    position: 2,
-    estimatedWait: '4 days',
-    status: 'Active',
-  },
-  {
-    id: '2',
-    title: 'Software Engineering',
-    position: 4,
-    estimatedWait: '7 days',
-    status: 'Active',
-  },
-  {
-    id: '3',
-    title: 'Operating System Concepts',
-    position: 1,
-    estimatedWait: 'Available now',
-    status: 'Ready',
-  },
-];
+function getEstimatedWait(item: WaitingItem): string {
+  if (item.status === 'Ready') {
+    return 'Available now';
+  }
+
+  if (item.estimatedDays === undefined) {
+    return 'Not available yet';
+  }
+
+  if (item.estimatedDays <= 0) {
+    return 'Today';
+  }
+
+  return item.estimatedDays === 1
+    ? '1 day'
+    : `${item.estimatedDays} days`;
+}
 
 export default function WaitingListStatusScreen() {
-  const [waitingLists, setWaitingLists] =
-    useState(initialWaitingLists);
+  const [waitingLists, setWaitingLists] = useState<WaitingItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [leavingBookId, setLeavingBookId] = useState<string | null>(null);
 
-  const leaveWaitingList = (id: string) => {
+  const loadWaitingLists = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const result = await getMyWaitingLists();
+
+      setWaitingLists(result as WaitingItem[]);
+    } catch (error) {
+      console.error('Failed to load waiting lists:', error);
+
+      Alert.alert(
+        'Error',
+        error instanceof Error
+          ? error.message
+          : 'Could not load your waiting lists.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadWaitingLists();
+    }, [loadWaitingLists]),
+  );
+
+  const handleLeaveWaitingList = (bookId: string) => {
     Alert.alert(
       'Leave Waiting List',
       'Are you sure you want to leave this waiting list?',
@@ -60,123 +93,164 @@ export default function WaitingListStatusScreen() {
         {
           text: 'Leave',
           style: 'destructive',
-          onPress: () => {
-            setWaitingLists((current) =>
-              current.filter((item) => item.id !== id)
-            );
+          onPress: async () => {
+            try {
+              setLeavingBookId(bookId);
+
+              await leaveWaitingListService(bookId);
+
+              setWaitingLists((current) =>
+                current.filter((item) => item.bookId !== bookId),
+              );
+            } catch (error) {
+              Alert.alert(
+                'Error',
+                error instanceof Error
+                  ? error.message
+                  : 'Could not leave the waiting list.',
+              );
+            } finally {
+              setLeavingBookId(null);
+            }
           },
         },
-      ]
+      ],
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.content}>
-        <Pressable onPress={() => router.back()}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.backButtonContainer}
+        >
           <Text style={styles.backButton}>‹ Back</Text>
         </Pressable>
 
         <Text style={styles.title}>Waiting List Status</Text>
 
         <Text style={styles.subtitle}>
-          Track your book waiting-list positions and estimated
-          availability.
+          Track your book waiting-list positions and availability.
         </Text>
 
-        <FlatList
-          data={waitingLists}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.header}>
-                <View style={styles.titleArea}>
-                  <Text style={styles.bookTitle}>
-                    {item.title}
-                  </Text>
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#2563EB"
+            style={styles.loader}
+          />
+        ) : (
+          <FlatList
+            data={waitingLists}
+            keyExtractor={(item) => item.bookId}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => {
+              const isReady = item.status === 'Ready';
+              const isLeaving = leavingBookId === item.bookId;
 
-                  <Text style={styles.bookType}>
-                    Book waiting list
-                  </Text>
-                </View>
+              return (
+                <View style={styles.card}>
+                  <View style={styles.header}>
+                    <View style={styles.titleArea}>
+                      <Text style={styles.bookTitle}>
+                        {item.book?.title ?? 'Book'}
+                      </Text>
 
-                <View
-                  style={[
-                    styles.statusBadge,
-                    item.status === 'Ready'
-                      ? styles.readyBadge
-                      : styles.activeBadge,
-                  ]}
-                >
-                  <Text
+                      {item.book?.author ? (
+                        <Text style={styles.author}>
+                          {item.book.author}
+                        </Text>
+                      ) : null}
+
+                      <Text style={styles.bookType}>
+                        Book waiting list
+                      </Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        isReady ? styles.readyBadge : styles.activeBadge,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          isReady ? styles.readyText : styles.activeText,
+                        ]}
+                      >
+                        {isReady ? 'Ready' : 'Waiting'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoBox}>
+                    <View style={styles.infoColumn}>
+                      <Text style={styles.infoLabel}>
+                        Your position
+                      </Text>
+
+                      <Text style={styles.position}>
+                        #{item.position}
+                      </Text>
+                    </View>
+
+                    <View style={styles.divider} />
+
+                    <View style={styles.infoColumn}>
+                      <Text style={styles.infoLabel}>
+                        Estimated wait
+                      </Text>
+
+                      <Text style={styles.infoValue}>
+                        {getEstimatedWait(item)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {isReady && (
+                    <View style={styles.readyMessage}>
+                      <Text style={styles.readyMessageText}>
+                        This book is ready for you. Check its availability
+                        before making a reservation.
+                      </Text>
+                    </View>
+                  )}
+
+                  <Pressable
                     style={[
-                      styles.statusText,
-                      item.status === 'Ready'
-                        ? styles.readyText
-                        : styles.activeText,
+                      styles.leaveButton,
+                      isLeaving && styles.disabledButton,
                     ]}
+                    disabled={isLeaving}
+                    onPress={() => handleLeaveWaitingList(item.bookId)}
                   >
-                    {item.status}
-                  </Text>
+                    {isLeaving ? (
+                      <ActivityIndicator color="#DC2626" />
+                    ) : (
+                      <Text style={styles.leaveText}>
+                        Leave Waiting List
+                      </Text>
+                    )}
+                  </Pressable>
                 </View>
-              </View>
-
-              <View style={styles.infoBox}>
-                <View style={styles.infoColumn}>
-                  <Text style={styles.infoLabel}>
-                    Your position
-                  </Text>
-
-                  <Text style={styles.position}>
-                    #{item.position}
-                  </Text>
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.infoColumn}>
-                  <Text style={styles.infoLabel}>
-                    Estimated wait
-                  </Text>
-
-                  <Text style={styles.infoValue}>
-                    {item.estimatedWait}
-                  </Text>
-                </View>
-              </View>
-
-              {item.status === 'Ready' && (
-                <View style={styles.readyMessage}>
-                  <Text style={styles.readyMessageText}>
-                    This book is now available for reservation.
-                  </Text>
-                </View>
-              )}
-
-              <Pressable
-                style={styles.leaveButton}
-                onPress={() => leaveWaitingList(item.id)}
-              >
-                <Text style={styles.leaveText}>
-                  Leave Waiting List
+              );
+            }}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyTitle}>
+                  No waiting lists
                 </Text>
-              </Pressable>
-            </View>
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyTitle}>
-                No waiting lists
-              </Text>
 
-              <Text style={styles.emptyText}>
-                You are not currently waiting for any books.
-              </Text>
-            </View>
-          }
-        />
+                <Text style={styles.emptyText}>
+                  You are not currently waiting for any books.
+                </Text>
+              </View>
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -192,6 +266,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
+  },
+
+  backButtonContainer: {
+    alignSelf: 'flex-start',
   },
 
   backButton: {
@@ -215,8 +293,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
+  loader: {
+    marginTop: 40,
+  },
+
   list: {
     paddingBottom: 30,
+    flexGrow: 1,
   },
 
   card: {
@@ -245,12 +328,19 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
+  author: {
+    fontSize: 13,
+    color: '#374151',
+    marginBottom: 4,
+  },
+
   bookType: {
     fontSize: 13,
     color: '#6B7280',
   },
 
   statusBadge: {
+    alignSelf: 'flex-start',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -288,6 +378,7 @@ const styles = StyleSheet.create({
   infoColumn: {
     flex: 1,
     alignItems: 'center',
+    paddingHorizontal: 4,
   },
 
   divider: {
@@ -299,6 +390,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 12,
     marginBottom: 5,
+    textAlign: 'center',
   },
 
   position: {
@@ -311,6 +403,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 15,
     fontWeight: '700',
+    textAlign: 'center',
   },
 
   readyMessage: {
@@ -324,6 +417,7 @@ const styles = StyleSheet.create({
     color: '#166534',
     fontSize: 13,
     fontWeight: '600',
+    lineHeight: 18,
   },
 
   leaveButton: {
@@ -332,6 +426,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
+  },
+
+  disabledButton: {
+    opacity: 0.6,
   },
 
   leaveText: {
@@ -343,6 +441,7 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     marginTop: 70,
+    paddingHorizontal: 12,
   },
 
   emptyTitle: {
@@ -355,5 +454,7 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#6B7280',
     fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
