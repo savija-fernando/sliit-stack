@@ -21,9 +21,14 @@ import AppHeader from '@/components/AppHeader';
 import StaffActivityRow from '../components/StaffActivityRow';
 import StaffBottomNav from '../components/StaffBottomNav';
 import StaffStatCard from '../components/StaffStatCard';
+import { TouchableOpacity } from 'react-native';
 
 export default function StaffDashboardScreen() {
   const router = useRouter();
+
+  const openAddBook = () => {
+  router.push('/add-book' as Href);
+};
 
   const openBookRequests = () => {
     router.push(
@@ -89,6 +94,22 @@ export default function StaffDashboardScreen() {
               />
             </View>
           </View>
+
+          {/* Add Book Button */}
+            <TouchableOpacity
+              style={styles.addBookButton}
+              onPress={openAddBook}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={22}
+                color="#FFFFFF"
+              />
+              <Text style={styles.addBookButtonText}>
+                Add New Book
+              </Text>
+            </TouchableOpacity>
 
           {/* Overview */}
           <View style={styles.sectionHeader}>
@@ -424,4 +445,22 @@ const styles = StyleSheet.create({
   activityList: {
     gap: 9,
   },
+
+
+  addBookButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  backgroundColor: '#2563EB',
+  paddingVertical: 13,
+  borderRadius: 12,
+  marginBottom: 22,
+},
+
+addBookButtonText: {
+  color: '#FFFFFF',
+  fontSize: 14,
+  fontWeight: '700',
+},
 });
