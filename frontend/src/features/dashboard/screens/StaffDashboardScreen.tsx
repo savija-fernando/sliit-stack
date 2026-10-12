@@ -30,6 +30,10 @@ export default function StaffDashboardScreen() {
   router.push('/add-book' as Href);
 };
 
+const openManageBooks = () => {
+  router.push('/manage-books' as Href);
+};
+
 const openSeatStudyRoomAdmin = () => {
   router.push('/admin-seat-studyroom' as Href);
 };
@@ -112,6 +116,21 @@ const openSeatStudyRoomAdmin = () => {
               />
               <Text style={styles.addBookButtonText}>
                 Add New Book
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.addBookButton}
+              onPress={openManageBooks}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="library-outline"
+                size={22}
+                color="#FFFFFF"
+              />
+              <Text style={styles.addBookButtonText}>
+                Manage Books
               </Text>
             </TouchableOpacity>
 
